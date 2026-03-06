@@ -1,0 +1,73 @@
+{
+  "_readme": "Section-specific prompt hints injected automatically when that section is queried. Edit freely — no code change needed. Keys = section numbers (lowercase). Each entry has 'hint' (injected into prompt) and optionally 'known_issues' (for your reference only).",
+
+  "192": {
+    "known_issues": "192(1C) start-up ESOP timing — 2025 maps to s.289(3) not inline. RPF/superannuation trustees in 192(4)(5) often missed.",
+    "hint": "Section 192 has 6+ sub-sections. CRITICAL: s.192(1C) deals with start-up ESOPs and maps to s.289(3) in the 2025 Act — cite this cross-reference explicitly. s.192(4) covers RPF trustees, s.192(5) covers superannuation fund trustees — do NOT skip these. s.192(2A) covers Section 89 relief which becomes Section 157 in 2025. The term 'financial year' in 1961 becomes 'tax year' in 2025 — note this terminological change."
+  },
+
+  "194h": {
+    "known_issues": "Two separate rates in 393 Sl.No.1 — 1(i) insurance commission at 'rates in force', 1(ii) other commission/brokerage at 2%. Often merged incorrectly.",
+    "hint": "Section 194H has TWO distinct sub-types in the 2025 Act's Section 393 Table: Sl.No.1(i) = insurance commission at 'rates in force' (threshold ₹20,000), Sl.No.1(ii) = all other commission/brokerage at 2% (threshold ₹20,000). These MUST appear as separate rows in the comparison table. The payer in 1(ii) is specifically a 'specified person' — define this."
+  },
+
+  "194j": {
+    "known_issues": "194J was amended in 2020 to split professional fees (10%) vs technical services (2%). The 2025 Act carries this split into 393 Sl.No.6(iii). Often the 2% vs 10% distinction is missed.",
+    "hint": "Section 194J has a critical rate split that MUST be shown: (a) Fees for technical services = 2%, (b) Fees for professional services = 10%, (c) Royalty = 10%, (d) Non-compete fees = 10%. In the 2025 Act this is Section 393, Table, Sl.No.6(iii). The 2% rate for technical services was introduced by Finance Act 2020 — note this in Section 3 if applicable. Show each rate as a separate row."
+  },
+
+  "194c": {
+    "known_issues": "Two payer categories with different rates: 1% for individual/HUF contractors, 2% for others. Also aggregate threshold vs single payment threshold.",
+    "hint": "Section 194C has TWO rate tiers: 1% when contractor is individual/HUF, 2% for all other contractors. Threshold is DUAL: ₹30,000 per single payment OR ₹1,00,000 aggregate in the year — both must appear as separate rows. In 2025 Act this maps to Section 393, Table, Sl.No.6(i) and 6(ii). Show the designated person vs any person distinction."
+  },
+
+  "194i": {
+    "known_issues": "Two rates depending on what is rented: 2% for machinery/plant/equipment, 10% for land/building/furniture. Often shown as a single 10% rate.",
+    "hint": "Section 194I has TWO rates: (a) 2% for rent of machinery, plant or equipment; (b) 10% for rent of land, building (including factory building), or furniture/fittings. In the 2025 Act this is Section 393, Table, Sl.No.2(ii). Also distinguish Sl.No.2(i) which covers the 'specified person' paying rent of ₹50,000+/month at 2%. These MUST be separate rows — do NOT merge into a single rate."
+  },
+
+  "194a": {
+    "known_issues": "Multiple thresholds: ₹40,000 for banks/co-op, ₹50,000 for senior citizens, ₹5,000 for others. Often only one threshold shown.",
+    "hint": "Section 194A has MULTIPLE threshold limits — show each separately: (a) ₹40,000 for interest from banking companies and co-operative societies, (b) ₹50,000 for senior citizens on bank deposits, (c) ₹5,000 for all other cases. Also note the exclusion list under 194A(3) — there are 15+ exempt categories including banks, LIC, UTI etc. In 2025 Act maps to Section 393, Table, Sl.No.5."
+  },
+
+  "44ad": {
+    "known_issues": "2025 Act uses a structured table for presumptive rates. Three sub-tables: business (6%/8%), goods carriage (₹1000/ton or ₹7500/vehicle), profession (50%). Often only 6%/8% shown.",
+    "hint": "Section 44AD in the 2025 Act (Section 58) uses a structured TABLE with THREE categories — show all three as separate sections: (1) Business income: 6% for digital receipts, 8% for cash receipts, turnover limit ₹2-3 crore; (2) Goods carriage: ₹1,000/ton for heavy vehicles, ₹7,500/vehicle for light vehicles (max 10 vehicles); (3) Profession: 50% of gross receipts, limit ₹50-75 lakh. Read the [TABLE] blocks carefully — all rates are in the structured data."
+  },
+
+  "80c": {
+    "known_issues": "Section 80C has a very long list of eligible investments. The 2025 Act maps to Section 123. The ₹1,50,000 overall cap must be stated. New tax regime (115BAC/202) exclusion is important.",
+    "hint": "Section 80C (2025: Section 123) has an overall deduction cap of ₹1,50,000. List ALL eligible investments separately — LIC premium, PPF, NSC, ELSS, home loan principal, tuition fees, Sukanya Samriddhi etc. CRITICAL: Note that deduction under 80C is NOT available under the new tax regime (Section 115BAC/Section 202 of 2025 Act) — this is a major practical point. Mention the 5-year lock-in for tax-saving FDs."
+  },
+
+  "80d": {
+    "known_issues": "Multiple slabs: self+family ₹25,000, senior citizen ₹50,000, parents ₹25,000/₹50,000. Preventive health check-up sub-limit of ₹5,000 often missed.",
+    "hint": "Section 80D (2025: Section 126) has a layered structure — show each slab separately: (a) Self + spouse + children: ₹25,000 (₹50,000 if senior citizen); (b) Parents: additional ₹25,000 (₹50,000 if senior citizen parents); (c) Preventive health check-up: sub-limit of ₹5,000 within the above limits. Maximum total deduction can reach ₹1,00,000. Show the cash payment restriction (only preventive check-up allowed in cash)."
+  },
+
+  "115bac": {
+    "known_issues": "New tax regime is now the DEFAULT from AY 2024-25. Slab rates changed. Long list of exemptions/deductions that are NOT available under new regime.",
+    "hint": "Section 115BAC (2025: Section 202) — NEW TAX REGIME IS THE DEFAULT from AY 2024-25 (unless opted out). Show the complete slab rate table for both regimes side by side. CRITICAL: List the deductions/exemptions NOT available under new regime: HRA, LTA, 80C, 80D, 80E, 80G, standard deduction on rent, interest on self-occupied property etc. Also note what IS available: standard deduction of ₹75,000 (enhanced from ₹50,000), NPS deduction u/s 80CCD(2). Show the opt-out mechanism."
+  },
+
+  "45": {
+    "known_issues": "Multiple sub-sections each with different tax treatment. LTCG vs STCG distinction. STT condition for equity. 2025 Act reorganised capital gains significantly.",
+    "hint": "Section 45 (2025: Section 67) — Show each sub-section separately as they deal with different asset types: (1) General capital gains rule; (2) Insurance compensation; (3) Conversion to stock-in-trade; (4) Receipt from firm on dissolution; (5) ESOP/sweat equity. The 2025 Act significantly restructured capital gains into Sections 67-86 — note which sub-sections moved where. STCG rate 20% (was 15%), LTCG rate 12.5% (was 10%) on equity — cite the Finance Act 2024 amendment."
+  },
+
+  "32": {
+    "known_issues": "Three methods of depreciation in 2025 Act. Written down value vs straight line. Additional depreciation under 32AC. Section 43(6) definition of WDV.",
+    "hint": "Section 32 (2025: Section 33) — Show all three depreciation methods: (1) WDV method for most assets; (2) Straight-line for power generation; (3) Unit of production for specified assets. Additional depreciation under Section 32(1)(iia) = 20% for new plant/machinery in manufacturing — show separately. The depreciation schedule is in the Appendix/Schedule — reference it. Note the 50% restriction in year of acquisition (used < 180 days)."
+  },
+
+  "234b": {
+    "known_issues": "Interest calculated on assessed tax minus advance tax paid. The 90% rule trigger. Often confused with 234A (late return) and 234C (deferment).",
+    "hint": "Section 234B (2025: Section 424) — Interest at 1% per month for default in advance tax. CRITICAL: Distinguish clearly from 234A (late filing) and 234C (deferment of instalments). The trigger is: advance tax paid < 90% of assessed tax. Show the calculation formula: (Assessed tax − Advance tax paid) × 1% × months. Note that 'assessed tax' means tax on total income as assessed minus TDS/TCS."
+  },
+
+  "271c": {
+    "known_issues": "Penalty equals TDS amount not deducted. Distinct from 201 (assessee in default) and 276B (prosecution).",
+    "hint": "Section 271C (2025: Section 448) — Penalty for failure to deduct TDS. Amount = equal to the amount of TDS not deducted or not paid. CRITICAL distinction: 271C is civil penalty, 276B is criminal prosecution — note both exist. Also distinguish from Section 201 which makes the deductor an 'assessee in default' and charges interest under 201(1A). Show all three consequences of TDS default together."
+  }
+}

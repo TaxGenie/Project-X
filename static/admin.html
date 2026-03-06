@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tax Cookies · Command Centre</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #171923;
+      --surface:   #1E2130;
+      --surface2:  #252836;
+      --surface3:  #2C3044;
+      --border:    rgba(255,255,255,0.10);
+      --border2:   rgba(255,255,255,0.16);
+      --gold:      #C9A84C;
+      --gold2:     #E8C96A;
+      --gold-dim:  rgba(201,168,76,0.12);
+      --blue:      #3D6EEA;
+      --blue-dim:  rgba(61,110,234,0.12);
+      --green:     #34D399;
+      --green-dim: rgba(52,211,153,0.12);
+      --red:       #F87171;
+      --red-dim:   rgba(248,113,113,0.12);
+      --orange:    #FB923C;
+      --purple:    #A78BFA;
+      --text:      #F0EDE6;
+      --text2:     #B0BFCC;
+      --text3:     #7A8A9A;
+      --fd: 'DM Serif Display', Georgia, serif;
+      --fb: 'Outfit', sans-serif;
+      --fm: 'DM Mono', 'Courier New', monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body { background:var(--bg); color:var(--text); font-family:var(--fb); min-height:100vh; overflow-x:hidden; }
+    body::before {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.010;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+
+    /* TOAST */
+    #tc{position:fixed;bottom:28px;right:28px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+    .toast{padding:12px 18px;border-radius:12px;font-size:13px;max-width:360px;display:flex;align-items:center;gap:10px;box-shadow:0 16px 48px rgba(0,0,0,.6);animation:tIn .35s cubic-bezier(.34,1.56,.64,1);pointer-events:all;font-weight:500;backdrop-filter:blur(12px);}
+    .toast.success{background:rgba(20,40,20,.95);border:1px solid rgba(52,211,153,.35);color:#6EE7B7;}
+    .toast.error  {background:rgba(40,15,15,.95);border:1px solid rgba(248,113,113,.35);color:#FCA5A5;}
+    .toast.info   {background:rgba(15,20,40,.95);border:1px solid rgba(61,110,234,.35);color:#93C5FD;}
+    .toast.warn   {background:rgba(40,30,10,.95);border:1px solid rgba(201,168,76,.35);color:#FCD34D;}
+    @keyframes tIn{from{transform:translateX(60px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+    @keyframes tOut{to{transform:translateX(60px) scale(.9);opacity:0}}
+
+    /* LOGIN */
+    #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse 700px 500px at 50% 40%,rgba(201,168,76,.08) 0%,transparent 70%),radial-gradient(ellipse 400px 300px at 80% 80%,rgba(61,110,234,.06) 0%,transparent 60%);}
+    .lcard{background:#2A2E3F;border:1px solid rgba(201,168,76,.15);border-radius:20px;padding:52px 48px;width:380px;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 80px rgba(201,168,76,.04);text-align:center;position:relative;overflow:hidden;}
+    .lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent);}
+    .l-emblem{font-size:42px;display:block;margin-bottom:14px;}
+    .l-title{font-family:var(--fd);font-size:26px;color:var(--gold);margin-bottom:6px;}
+    .l-sub{font-size:13px;color:var(--text3);margin-bottom:32px;}
+    .l-field{position:relative;margin-bottom:14px;}
+    .l-field input{width:100%;padding:13px 16px 13px 44px;border-radius:10px;background:rgba(0,0,0,.4);border:1px solid rgba(201,168,76,.2);color:var(--text);font-size:15px;font-family:var(--fm);letter-spacing:4px;text-align:center;outline:none;transition:border .2s,box-shadow .2s;}
+    .l-field input:focus{border-color:rgba(201,168,76,.5);box-shadow:0 0 0 3px rgba(201,168,76,.08);}
+    .l-lock{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
+    .l-btn{width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),#B8943F);color:#0A0C12;font-size:14px;font-weight:700;font-family:var(--fb);cursor:pointer;transition:all .2s;letter-spacing:.4px;}
+    .l-btn:hover{background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 8px 32px rgba(201,168,76,.3);transform:translateY(-1px);}
+    .l-err{color:var(--red);font-size:12px;margin-top:12px;min-height:18px;font-weight:500;}
+    .l-hint{font-size:11px;color:var(--text3);margin-top:20px;opacity:.6;}
+    kbd{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-size:10px;font-family:var(--fm);color:var(--text3);}
+
+    /* SHELL */
+    #adminShell{display:none;}
+
+    /* SIDEBAR */
+    .sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;}
+    .sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+    .sb-logo-icon{font-size:22px;}
+    .sb-logo-text strong{display:block;font-family:var(--fd);font-size:17px;color:var(--gold);line-height:1;}
+    .sb-logo-text small{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;}
+    .sb-nav{flex:1;padding:12px 10px;overflow-y:auto;}
+    .nav-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;padding:10px 8px 4px;}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:14px;color:var(--text2);font-weight:500;text-decoration:none;margin-bottom:2px;user-select:none;}
+    .nav-item:hover{background:rgba(255,255,255,.05);color:var(--text);}
+    .nav-item.active{background:var(--gold-dim);color:var(--gold);}
+    .nav-icon{font-size:15px;width:20px;text-align:center;}
+    .sb-footer{border-top:1px solid var(--border);padding:12px 10px;}
+    .sb-logout{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--text3);font-weight:500;background:none;border:none;width:100%;text-align:left;}
+    .sb-logout:hover{background:var(--red-dim);color:var(--red);}
+    .sb-clock{font-family:var(--fm);font-size:11px;color:var(--text3);padding:6px 10px;text-align:center;}
+
+    /* TOPBAR */
+    .topbar{position:fixed;top:0;left:220px;right:0;height:58px;background:rgba(8,10,16,.85);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;}
+    .tb-left{display:flex;align-items:center;gap:14px;}
+    .tb-title{font-size:15px;font-weight:700;color:#F0EDE6;}
+    .tb-sub{font-size:12px;color:var(--text3);}
+    .tb-right{display:flex;align-items:center;gap:10px;}
+    .cd-pill{font-family:var(--fm);font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+    .cd-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .tb-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--fb);border:1px solid;display:flex;align-items:center;gap:6px;}
+    .tb-ghost{background:transparent;border-color:var(--border2);color:var(--text2);}
+    .tb-ghost:hover{background:var(--surface2);color:var(--text);}
+    .tb-gold{background:var(--gold-dim);border-color:rgba(201,168,76,.3);color:var(--gold);}
+    .tb-gold:hover{background:rgba(201,168,76,.2);}
+    .tb-blue{background:var(--blue-dim);border-color:rgba(61,110,234,.3);color:#93C5FD;}
+    .tb-blue:hover{background:rgba(61,110,234,.2);}
+
+    /* MAIN */
+    .main{margin-left:220px;padding:80px 28px 60px;}
+
+    /* PANELS */
+    .panel{display:none;animation:fadeUp .4s ease;}
+    .panel.active{display:block;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+    /* PAGE HDR */
+    .page-hdr{margin-bottom:28px;}
+    .page-hdr h1{font-family:var(--fd);font-size:28px;color:var(--text);font-weight:400;margin-bottom:4px;}
+    .page-hdr p{font-size:13px;color:var(--text3);}
+
+    /* STAT GRID */
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+    .sc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s;animation:fadeUp .4s ease both;}
+    .sc:hover{border-color:var(--border2);transform:translateY(-2px);}
+    .sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:14px 14px 0 0;}
+    .sc.cg::after{background:linear-gradient(90deg,var(--gold),transparent);}
+    .sc.cb::after{background:linear-gradient(90deg,var(--blue),transparent);}
+    .sc.cgr::after{background:linear-gradient(90deg,var(--green),transparent);}
+    .sc.cp::after{background:linear-gradient(90deg,var(--purple),transparent);}
+    .sc.co::after{background:linear-gradient(90deg,var(--orange),transparent);}
+    .sc.cr::after{background:linear-gradient(90deg,var(--red),transparent);}
+    .sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+    .sc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .sc-icon.cg{background:var(--gold-dim);} .sc-icon.cb{background:var(--blue-dim);} .sc-icon.cgr{background:var(--green-dim);}
+    .sc-icon.cp{background:rgba(167,139,250,.1);} .sc-icon.co{background:rgba(251,146,60,.1);} .sc-icon.cr{background:var(--red-dim);}
+    .sc-trend{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;font-family:var(--fm);}
+    .tu{background:var(--green-dim);color:var(--green);} .td2{background:var(--red-dim);color:var(--red);} .tf{background:rgba(100,116,139,.1);color:var(--text3);}
+    .sc-val{font-size:34px;font-weight:800;color:#F0EDE6;line-height:1;margin-bottom:4px;letter-spacing:-1px;}
+    .sc-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+    .sc-sub{font-size:11px;color:rgba(148,163,184,.4);margin-top:4px;}
+    .sc:nth-child(1){animation-delay:.05s} .sc:nth-child(2){animation-delay:.10s} .sc:nth-child(3){animation-delay:.15s} .sc:nth-child(4){animation-delay:.20s}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+    .card-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .card-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;}
+    .card-meta{font-size:11px;color:var(--text3);font-family:var(--fm);}
+
+    /* SEARCH */
+    .tbl-search{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);}
+    .tbl-search input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:var(--fb);}
+    .tbl-search input::placeholder{color:var(--text3);}
+
+    /* TABLES */
+    table{width:100%;border-collapse:collapse;}
+    thead th{padding:10px 18px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:700;text-align:left;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);font-family:var(--fb);}
+    tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background .1s;}
+    tbody tr:hover{background:rgba(255,255,255,.045);}
+    tbody tr:last-child{border-bottom:none;}
+    tbody td{padding:12px 18px;font-size:14px;vertical-align:middle;}
+    .empty-row td{text-align:center;color:var(--text3);padding:36px;font-style:italic;font-size:13px;}
+
+    /* BADGES */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--fm);}
+    .bg{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,.25);}
+    .br{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.25);}
+    .bgo{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,.25);}
+    .bb{background:var(--blue-dim);color:#93C5FD;border:1px solid rgba(61,110,234,.25);}
+    .bp{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.25);}
+    .bo{background:rgba(251,146,60,.1);color:var(--orange);border:1px solid rgba(251,146,60,.25);}
+    .bm{background:rgba(75,85,99,.15);color:var(--text3);border:1px solid rgba(75,85,99,.25);}
+
+    /* ACTION BTNS */
+    .ab{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid;font-family:var(--fb);}
+    .ab-g{background:var(--gold-dim);border-color:rgba(201,168,76,.3);color:var(--gold);}    .ab-g:hover{background:rgba(201,168,76,.22);}
+    .ab-d{background:var(--red-dim);border-color:rgba(248,113,113,.3);color:var(--red);}     .ab-d:hover{background:rgba(248,113,113,.2);}
+    .ab-e{background:var(--green-dim);border-color:rgba(52,211,153,.3);color:var(--green);}  .ab-e:hover{background:rgba(52,211,153,.2);}
+
+    /* GRIDS */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+    .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
+
+    /* BAR CHART */
+    .chart-area{padding:16px 20px 12px;}
+    .bar-chart{display:flex;align-items:flex-end;gap:5px;height:120px;}
+    .bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default;position:relative;}
+    .bc:hover .btip{opacity:1;transform:translateX(-50%) translateY(-4px);}
+    .bar{width:100%;border-radius:5px 5px 0 0;min-height:4px;transition:height .5s cubic-bezier(.34,1.56,.64,1),filter .2s;}
+    .bar.bgold{background:linear-gradient(180deg,var(--gold),rgba(201,168,76,.2));}
+    .bar.bblue{background:linear-gradient(180deg,var(--blue),rgba(61,110,234,.2));}
+    .bar:hover{filter:brightness(1.3);}
+    .blbl{font-size:9px;color:var(--text3);text-align:center;white-space:nowrap;font-family:var(--fm);}
+    .btip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:5px 10px;white-space:nowrap;font-size:11px;color:var(--text);font-family:var(--fm);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:10;}
+
+    /* TOPIC BARS */
+    .topic-list{padding:12px 18px;display:flex;flex-direction:column;gap:10px;}
+    .topic-row{display:flex;align-items:center;gap:10px;}
+    .t-rank{font-size:10px;font-family:var(--fm);color:var(--text3);width:18px;text-align:center;flex-shrink:0;}
+    .t-name{font-size:12px;color:var(--text);flex:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+    .t-track{flex:3;background:rgba(255,255,255,.04);border-radius:4px;height:5px;overflow:hidden;}
+    .t-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),rgba(201,168,76,.35));transition:width .6s ease;}
+    .t-count{font-size:11px;font-family:var(--fm);color:var(--text3);width:28px;text-align:right;flex-shrink:0;}
+
+    /* REVENUE */
+    .rev-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+    .rev-row:last-child{border-bottom:none;}
+    .rev-label{font-size:13px;color:var(--text2);}
+    .rev-value{font-size:18px;font-weight:700;color:var(--gold);font-family:var(--fm);}
+
+    /* NOTICE */
+    .notice{background:rgba(61,110,234,.07);border:1px solid rgba(61,110,234,.2);border-radius:10px;padding:12px 18px;font-size:13px;color:#93C5FD;margin-bottom:22px;line-height:1.6;display:flex;align-items:center;gap:10px;}
+    .notice code{background:rgba(61,110,234,.15);border-radius:4px;padding:1px 6px;font-family:var(--fm);font-size:12px;}
+
+    /* TODAY ROW */
+    .today-row td:first-child::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:8px;box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;vertical-align:middle;}
+
+    /* MODALS */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;animation:mfade .2s ease;}
+    .modal-overlay.hidden{display:none;}
+    @keyframes mfade{from{opacity:0}to{opacity:1}}
+    .modal-box{background:#2A2E3F;border:1px solid rgba(201,168,76,.2);border-radius:18px;padding:32px 30px;width:100%;max-width:440px;box-shadow:0 40px 100px rgba(0,0,0,.7);position:relative;animation:mup .3s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes mup{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+    .modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent);border-radius:18px 18px 0 0;}
+    .mc{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .15s;line-height:1;}
+    .mc:hover{background:rgba(255,255,255,.07);color:var(--text);}
+    .m-icon{font-size:28px;margin-bottom:10px;display:block;}
+    .m-title{font-family:var(--fd);font-size:20px;color:var(--gold);margin-bottom:4px;}
+    .m-sub{font-size:12px;color:var(--text3);margin-bottom:24px;}
+    .field{margin-bottom:16px;}
+    .field label{display:block;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+    .field input,.field select,.field textarea{width:100%;padding:11px 14px;border-radius:9px;background:rgba(0,0,0,.35);border:1px solid rgba(61,110,234,.3);color:var(--text);font-size:14px;outline:none;font-family:var(--fb);transition:border .2s;}
+    .field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.07);}
+    .m-btn{width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#B8943F);border:none;color:#080A10;font-size:14px;font-weight:700;font-family:var(--fb);cursor:pointer;transition:all .2s;letter-spacing:.3px;}
+    .m-btn:hover:not(:disabled){background:linear-gradient(135deg,var(--gold2),var(--gold));box-shadow:0 8px 28px rgba(201,168,76,.28);transform:translateY(-1px);}
+    .m-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .m-msg{margin-top:10px;font-size:12px;text-align:center;min-height:18px;font-weight:500;}
+    .m-msg.ok{color:var(--green);} .m-msg.er{color:var(--red);}
+
+    /* USER DETAIL MODAL */
+    .modal-wide{max-width:560px;}
+    .ud-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+    .ud-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+    .ud-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:700;margin-bottom:4px;}
+    .ud-val{font-size:14px;color:var(--text);font-weight:600;font-family:var(--fm);}
+
+    /* CONFIRM MODAL */
+    .cf-icon{font-size:40px;text-align:center;display:block;margin-bottom:12px;}
+    .cf-title{font-size:18px;font-weight:700;color:var(--text);text-align:center;margin-bottom:8px;}
+    .cf-msg{font-size:13px;color:var(--text3);text-align:center;margin-bottom:24px;line-height:1.6;}
+    .cf-btns{display:flex;gap:10px;}
+    .cf-btns button{flex:1;padding:11px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fb);transition:all .2s;}
+    .cf-cancel{background:none;border:1px solid var(--border2);color:var(--text2);}  .cf-cancel:hover{background:var(--surface2);}
+    .cf-danger{background:var(--red-dim);border:1px solid rgba(248,113,113,.3);color:var(--red);}  .cf-danger:hover{background:rgba(248,113,113,.2);}
+    .cf-ok{background:var(--green-dim);border:1px solid rgba(52,211,153,.3);color:var(--green);}  .cf-ok:hover{background:rgba(52,211,153,.2);}
+
+    /* SPINNER */
+    .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    /* FEEDBACK */
+    .ab-sm{padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid;font-family:var(--fb);transition:all .15s;background:var(--red-dim);border-color:rgba(248,113,113,.3);color:var(--red);}
+    .ab-sm:hover{background:rgba(248,113,113,.2);}
+
+    /* MONO / DATE */
+    .em{font-family:var(--fm);font-size:13px;color:#7EC8F0;}
+    .dt{font-family:var(--fm);font-size:11px;color:var(--text3);}
+
+    /* RESPONSIVE */
+    @media(max-width:1100px){.stat-grid{grid-template-columns:repeat(2,1fr)}.three-col{grid-template-columns:1fr 1fr}}
+    @media(max-width:768px){.sidebar{transform:translateX(-100%);transition:transform .3s}.sidebar.open{transform:none}.topbar,.main{left:0;margin-left:0}.stat-grid,.two-col,.three-col{grid-template-columns:1fr}.mob-menu{display:flex !important}}
+    .mob-menu{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:18px;margin-right:8px;}
+  </style>
+</head>
+<body>
+<div id="tc"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lcard">
+    <span class="l-emblem">⚖️</span>
+    <div class="l-title">Command Centre</div>
+    <div class="l-sub">Tax Cookies · Restricted Access</div>
+    <div class="l-field">
+      <span class="l-lock">🔐</span>
+      <input type="password" id="pwInput" placeholder="••••••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()" autofocus autocomplete="current-password"/>
+    </div>
+    <button class="l-btn" onclick="doLogin()">Access Dashboard →</button>
+    <div class="l-err" id="loginError"></div>
+    <div class="l-hint">Press <kbd>Enter</kbd> to submit</div>
+  </div>
+</div>
+
+<!-- ADMIN SHELL -->
+<div id="adminShell">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <span class="sb-logo-icon">⚖️</span>
+      <div class="sb-logo-text"><strong>Tax Cookies</strong><small>Admin v2.4.0</small></div>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-lbl">Overview</div>
+      <div class="nav-item active" id="nav-overview" onclick="showPanel('overview')"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item" id="nav-users"    onclick="showPanel('users')">   <span class="nav-icon">👥</span> Users</div>
+      <div class="nav-item" id="nav-activity" onclick="showPanel('activity')"><span class="nav-icon">⚡</span> Activity</div>
+      <div class="nav-lbl">Finance</div>
+      <div class="nav-item" id="nav-revenue"  onclick="showPanel('revenue')"> <span class="nav-icon">💳</span> Revenue</div>
+      <div class="nav-item" id="nav-grants"   onclick="showPanel('grants')">  <span class="nav-icon">🎁</span> Grants</div>
+      <div class="nav-lbl">Insights</div>
+      <div class="nav-item" id="nav-chats"    onclick="showPanel('chats')">   <span class="nav-icon">💬</span> Sessions</div>
+      <div class="nav-item" id="nav-topics"   onclick="showPanel('topics')">  <span class="nav-icon">🔍</span> Topics</div>
+      <div class="nav-item" id="nav-feedbacks" onclick="showPanel('feedbacks')"><span class="nav-icon">💌</span> Feedbacks</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-clock" id="sbClock">—</div>
+      <button class="sb-logout" onclick="doLogout()"><span>🚪</span> Sign Out</button>
+    </div>
+  </nav>
+
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="mob-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div>
+        <div class="tb-title" id="tbTitle">Dashboard</div>
+        <div class="tb-sub">Tax Cookies · Admin · <span id="tbSub">Overview</span></div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="cd-pill"><div class="cd-dot"></div><span id="cdCount">60s</span></div>
+      <button class="tb-btn tb-blue" onclick="exportCSV('users')">📥 Users</button>
+      <button class="tb-btn tb-blue" onclick="exportCSV('activity')">📥 Activity</button>
+      <button class="tb-btn tb-gold" onclick="loadAll()">↺ Refresh</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="page-hdr"><h1>Good day 👋</h1><p>Here's what's happening with Tax Cookies right now.</p></div>
+      <div class="stat-grid">
+        <div class="sc cg"><div class="sc-top"><div class="sc-icon cg">👥</div><span class="sc-trend tf" id="trendUsers">—</span></div><div class="sc-val" id="statUsers">—</div><div class="sc-lbl">Total Users</div><div class="sc-sub" id="statNewUsers">—</div></div>
+        <div class="sc cb"><div class="sc-top"><div class="sc-icon cb">⚡</div><span class="sc-trend tf" id="trendCredits">—</span></div><div class="sc-val" id="statCreditsToday">—</div><div class="sc-lbl">Credits Today</div><div class="sc-sub" id="statCreditsYesterday">—</div></div>
+        <div class="sc cgr"><div class="sc-top"><div class="sc-icon cgr">💬</div><span class="sc-trend tf" id="trendSessions">—</span></div><div class="sc-val" id="statSessions">—</div><div class="sc-lbl">Total Sessions</div><div class="sc-sub" id="statSessionsToday">—</div></div>
+        <div class="sc cp"><div class="sc-top"><div class="sc-icon cp">🟢</div><span class="sc-trend tf" id="trendActive">—</span></div><div class="sc-val" id="statActiveToday">—</div><div class="sc-lbl">Active Today</div><div class="sc-sub" id="statActiveYesterday">—</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">📊 Credit Usage — 30 Days</span><span class="card-meta" id="chartMeta">—</span></div>
+          <div class="chart-area"><div class="bar-chart" id="chartBars"><div style="color:var(--text3);font-size:13px;margin:auto;">Loading…</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">🔥 Top Searched Topics</span><span class="card-meta" id="topicsMeta">—</span></div>
+          <div class="topic-list" id="topicsList"><div style="color:var(--text3);font-size:13px;padding:20px;text-align:center;">Loading…</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">🕐 Recent Sessions</span><span class="card-meta" id="chatCount">—</span></div>
+        <table><thead><tr><th>User</th><th>Topic</th><th>Messages</th><th>Last Activity</th></tr></thead>
+        <tbody id="chatsOv"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ USERS ═══ -->
+    <div class="panel" id="panel-users">
+      <div class="page-hdr"><h1>Users</h1><p>Manage all registered users, grant credits, and control access.</p></div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="sc cb" style="animation-delay:.05s"><div class="sc-top"><div class="sc-icon cb">📋</div></div><div class="sc-val" id="uTotal">—</div><div class="sc-lbl">Registered</div></div>
+        <div class="sc cgr" style="animation-delay:.1s"><div class="sc-top"><div class="sc-icon cgr">✅</div></div><div class="sc-val" id="uActive">—</div><div class="sc-lbl">Active</div></div>
+        <div class="sc cr" style="animation-delay:.15s"><div class="sc-top"><div class="sc-icon cr">🚫</div></div><div class="sc-val" id="uInactive">—</div><div class="sc-lbl">Disabled</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">👥 All Users</span><span class="card-meta" id="userCountLbl">—</span></div>
+        <div class="tbl-search"><span>🔍</span><input type="text" id="userSearch" placeholder="Search by email…" oninput="filterUsers()"/></div>
+        <table><thead><tr><th>Email</th><th>Joined</th><th>Last Active</th><th>Credits</th><th>Sessions</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="usersTable"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">⚡ Credit Consumption</span><span class="card-meta" id="totalCreditsLbl">—</span></div>
+        <table><thead><tr><th>Email</th><th>Total Credits</th><th>Sessions</th><th>Last Active</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="creditsTable"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ ACTIVITY ═══ -->
+    <div class="panel" id="panel-activity">
+      <div class="page-hdr"><h1>Activity</h1><p>Daily usage breakdown and AI cost estimates.</p></div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="sc cg" style="animation-delay:.05s"><div class="sc-top"><div class="sc-icon cg">⚡</div></div><div class="sc-val" id="aTotal">—</div><div class="sc-lbl">All-Time Credits</div></div>
+        <div class="sc co" style="animation-delay:.1s"><div class="sc-top"><div class="sc-icon co">📈</div></div><div class="sc-val" id="aAvg">—</div><div class="sc-lbl">Avg / Day (30d)</div></div>
+        <div class="sc cr" style="animation-delay:.15s"><div class="sc-top"><div class="sc-icon cr">💸</div></div><div class="sc-val" id="aCost">—</div><div class="sc-lbl">Est. Cost (30d)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">📅 Daily Credit Breakdown</span><span class="card-meta">last 30 days</span></div>
+        <table><thead><tr><th>Date</th><th>Credits</th><th>Active Users</th><th>Est. Analyses</th><th>Est. API Cost</th></tr></thead>
+        <tbody id="dailyTable"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ REVENUE ═══ -->
+    <div class="panel" id="panel-revenue">
+      <div class="page-hdr"><h1>Revenue</h1><p>Purchase history and revenue analytics.</p></div>
+      <div class="notice" id="revNotice">ℹ️ <div>Revenue tracking activates automatically once you integrate Razorpay/Stripe and <code>credit_purchases</code> table is created.</div></div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="sc cg" style="animation-delay:.05s"><div class="sc-top"><div class="sc-icon cg">💰</div></div><div class="sc-val" id="revTotal">₹0</div><div class="sc-lbl">Total Revenue</div></div>
+        <div class="sc cgr" style="animation-delay:.1s"><div class="sc-top"><div class="sc-icon cgr">🛍️</div></div><div class="sc-val" id="revCount">0</div><div class="sc-lbl">Purchases</div></div>
+        <div class="sc cb" style="animation-delay:.15s"><div class="sc-top"><div class="sc-icon cb">📊</div></div><div class="sc-val" id="revAvg">₹0</div><div class="sc-lbl">Avg Order</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">🛍️ Purchase History</span><span class="card-meta" id="purchaseCount">0 purchases</span></div>
+        <table><thead><tr><th>User</th><th>Pack</th><th>Amount</th><th>Credits</th><th>Payment ID</th><th>Date</th></tr></thead>
+        <tbody id="purchasesTable"><tr class="empty-row"><td colspan="6">No purchases yet — connect payment gateway.</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ GRANTS ═══ -->
+    <div class="panel" id="panel-grants">
+      <div class="page-hdr"><h1>Credit Grants</h1><p>Manual credit grants — full audit trail.</p></div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">🎁 Grant History</span><span class="card-meta" id="grantCountLbl">—</span></div>
+        <table><thead><tr><th>User</th><th>Credits</th><th>Reason</th><th>Granted At</th></tr></thead>
+        <tbody id="grantsTable"><tr class="empty-row"><td colspan="4">No grants yet.</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ CHATS ═══ -->
+    <div class="panel" id="panel-chats">
+      <div class="page-hdr"><h1>Sessions</h1><p>All chat sessions across users — most recent first.</p></div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">💬 Recent Sessions</span><span class="card-meta" id="chatCount2">—</span></div>
+        <table><thead><tr><th>User</th><th>Topic</th><th>Messages</th><th>Created</th><th>Last Activity</th></tr></thead>
+        <tbody id="chatsFull"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ TOPICS ═══ -->
+    <div class="panel" id="panel-topics">
+      <div class="page-hdr"><h1>Topics</h1><p>What your users search for most — ranked by frequency.</p></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">🔍 Top Topics</span><span class="card-meta" id="topicsMetaFull">—</span></div>
+          <div class="topic-list" id="topicsListFull"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">📊 Frequency Chart</span></div>
+          <div class="chart-area"><div class="bar-chart" id="topicsChart"><div style="color:var(--text3);font-size:13px;margin:auto;">Loading…</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FEEDBACKS ═══ -->
+    <div class="panel" id="panel-feedbacks">
+      <div class="page-hdr"><h1>Feedbacks</h1><p>Thumbs-up / thumbs-down ratings from users — sourced from <code style="font-family:var(--fm);font-size:12px;background:var(--surface2);padding:2px 7px;border-radius:4px;color:var(--gold)">feedback_log.json</code>.</p></div>
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="sc cb"  style="animation-delay:.05s"><div class="sc-top"><div class="sc-icon cb">💌</div></div><div class="sc-val" id="fbTotal">—</div><div class="sc-lbl">Total Entries</div></div>
+        <div class="sc cgr" style="animation-delay:.10s"><div class="sc-top"><div class="sc-icon cgr">👍</div></div><div class="sc-val" id="fbUp">—</div><div class="sc-lbl">Thumbs Up</div></div>
+        <div class="sc cr"  style="animation-delay:.15s"><div class="sc-top"><div class="sc-icon cr">👎</div></div><div class="sc-val" id="fbDown">—</div><div class="sc-lbl">Thumbs Down</div></div>
+        <div class="sc co"  style="animation-delay:.20s"><div class="sc-top"><div class="sc-icon co">⚠️</div></div><div class="sc-val" id="fbNeedsAttention">—</div><div class="sc-lbl">Needs Attention</div></div>
+      </div>
+
+      <!-- Section breakdown -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">📊 Section Breakdown</span><span class="card-meta" id="fbSectionMeta">—</span></div>
+          <div id="fbSectionList" style="padding:12px 18px;display:flex;flex-direction:column;gap:8px;">
+            <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">💬 Comments</span><span class="card-meta" id="fbCommentMeta">—</span></div>
+          <div id="fbCommentList" style="padding:12px 18px;display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;">
+            <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">No comments yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full log table -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">📋 Full Feedback Log</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="card-meta" id="fbCountLbl">—</span>
+            <button class="tb-btn tb-blue" onclick="exportCSV('feedbacks')" style="font-size:11px;padding:4px 10px;">📥 CSV</button>
+          </div>
+        </div>
+        <div class="tbl-search"><span>🔍</span><input type="text" id="fbSearch" placeholder="Filter by query, section, or comment…" oninput="filterFeedbacks()"/></div>
+        <table><thead><tr><th>Time</th><th>Query</th><th>1961 §</th><th>2025 §</th><th>Rating</th><th>Comment</th><th></th></tr></thead>
+        <tbody id="feedbacksTable"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- GRANT MODAL -->
+<div class="modal-overlay hidden" id="grantModal" onclick="handleOv(event,'grantModal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="mc" onclick="hideM('grantModal')">✕</button>
+    <span class="m-icon">⚡</span>
+    <div class="m-title">Add Credits</div>
+    <div class="m-sub" id="grantSub">Top up this user's credits for today.</div>
+    <input type="hidden" id="grantUserId"/>
+    <div class="field"><label>Credits to Add</label><input type="number" id="grantAmount" min="1" max="500" placeholder="e.g. 20" onkeydown="if(event.key==='Enter')submitGrant()"/></div>
+    <div class="field"><label>Reason <span style="color:var(--text3);font-weight:400;">(optional)</span></label><input type="text" id="grantReason" placeholder="Testing · Compensation · Gift…" onkeydown="if(event.key==='Enter')submitGrant()"/></div>
+    <button class="m-btn" id="grantBtn" onclick="submitGrant()">Add Credits →</button>
+    <div class="m-msg" id="grantMsg"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay hidden" id="confirmModal" onclick="handleOv(event,'confirmModal')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:380px;">
+    <span class="cf-icon" id="cfIcon">⚠️</span>
+    <div class="cf-title" id="cfTitle">Are you sure?</div>
+    <div class="cf-msg"   id="cfMsg">This cannot be undone.</div>
+    <div class="cf-btns">
+      <button class="cf-cancel" onclick="hideM('confirmModal')">Cancel</button>
+      <button id="cfOk" class="cf-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay hidden" id="userModal" onclick="handleOv(event,'userModal')">
+  <div class="modal-box modal-wide" onclick="event.stopPropagation()">
+    <button class="mc" onclick="hideM('userModal')">✕</button>
+    <span class="m-icon">👤</span>
+    <div class="m-title" id="umEmail">—</div>
+    <div class="m-sub"   id="umSub">—</div>
+    <div class="ud-grid" id="umGrid"></div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="m-btn" style="flex:1" onclick="grantFromModal()">⚡ Add Credits</button>
+      <button class="m-btn" style="flex:1;background:var(--red-dim);border:1px solid rgba(248,113,113,.3);color:var(--red);box-shadow:none;" id="umToggle" onclick="toggleFromModal()">🚫 Disable</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AKEY = 'tg_adm_v2';
+let _users=[], _stats=[], _data=null, _cdTimer, _sLeft=60, _curUser=null;
+
+// ── AUTH ──────────────────────────────────────────────
+function doLogin(){
+  const pw=document.getElementById('pwInput').value.trim();
+  if(!pw){setTxt('loginError','Please enter your password.');return;}
+  sessionStorage.setItem(AKEY,pw);
+  showAdmin();
+}
+function doLogout(){
+  sessionStorage.removeItem(AKEY);
+  clearInterval(_cdTimer);
+  document.getElementById('adminShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('pwInput').value='';
+  setTxt('loginError','');
+  toast('Signed out.','info');
+}
+function showAdmin(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminShell').style.display='block';
+  startCD(); startClock(); loadAll();
+}
+function ah(){return{'Content-Type':'application/json','X-Admin-Password':sessionStorage.getItem(AKEY)||''};}
+
+// ── NAVIGATION ────────────────────────────────────────
+const PANELS=['overview','users','activity','revenue','grants','chats','topics','feedbacks'];
+const PT={overview:['Dashboard','Overview'],users:['Users','Management'],activity:['Activity','Usage'],revenue:['Revenue','Purchases'],grants:['Grants','Audit Trail'],chats:['Sessions','Chat History'],topics:['Topics','Search Analytics'],feedbacks:['Feedbacks','User Feedback']};
+function showPanel(id){
+  PANELS.forEach(p=>{
+    document.getElementById('panel-'+p).classList.toggle('active',p===id);
+    document.getElementById('nav-'+p).classList.toggle('active',p===id);
+  });
+  const[t,s]=PT[id]||['—','—'];
+  setTxt('tbTitle',t); setTxt('tbSub',s);
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+// ── CLOCK ─────────────────────────────────────────────
+function startClock(){
+  function tick(){
+    const n=new Date();
+    const t=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const d=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    setTxt('sbClock',`${d} · ${t} IST`);
+  }
+  tick(); setInterval(tick,1000);
+}
+
+// ── AUTO-REFRESH ──────────────────────────────────────
+function startCD(){
+  clearInterval(_cdTimer); _sLeft=60;
+  _cdTimer=setInterval(()=>{
+    _sLeft--;
+    setTxt('cdCount',`${_sLeft}s`);
+    if(_sLeft<=0){_sLeft=60;loadAll();}
+  },1000);
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function toast(msg,type='info'){
+  const icons={success:'✅',error:'⚠️',info:'ℹ️',warn:'💡'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('tc').appendChild(el);
+  setTimeout(()=>{el.style.animation='tOut .3s ease forwards';setTimeout(()=>el.remove(),320);},3800);
+}
+
+// ── LOAD DATA ─────────────────────────────────────────
+async function loadAll(){
+  _sLeft=60; setTxt('cdCount','…');
+  try{
+    const res=await fetch('/admin/data',{headers:ah()});
+    if(res.status===403){setTxt('loginError','Incorrect password.');doLogout();return;}
+    _data=await res.json();
+    renderAll(_data);
+    toast('Refreshed ✓','success');
+  }catch(e){toast('Failed to load — is the server running?','error');}
+}
+
+function renderAll(d){
+  renderStats(d);
+  renderChart(d.daily_activity);
+  renderTopics(d.top_topics);
+  _users=d.users; _stats=d.credit_stats;
+  renderUsers(_users,_stats);
+  renderCredits(_stats);
+  renderDaily(d.daily_activity);
+  renderGrants(d.grants);
+  renderChats(d.recent_chats);
+  renderPurchases(d.purchases,d.revenue_total);
+  renderFeedbacks(d.feedbacks||[], d.feedback_stats||{});
+  renderUserMini(_users);
+  renderActMini(d.daily_activity);
+  document.getElementById('revNotice').style.display=(d.purchases&&d.purchases.length)?'none':'flex';
+}
+
+// ── STATS ─────────────────────────────────────────────
+function trnd(t,y){
+  if(y===0&&t===0)return{c:'tf',x:'—'};
+  if(y===0)return{c:'tu',x:'↑ new'};
+  const p=Math.round(((t-y)/y)*100);
+  if(p>0)return{c:'tu',x:`↑ ${p}%`};
+  if(p<0)return{c:'td2',x:`↓ ${Math.abs(p)}%`};
+  return{c:'tf',x:'→ same'};
+}
+function setTrend(id,tr){
+  const el=document.getElementById(id);
+  if(el){el.textContent=tr.x;el.className=`sc-trend ${tr.c}`;}
+}
+function renderStats(d){
+  setTxt('statUsers',d.total_users);
+  setTxt('statNewUsers',`+${d.new_users_today} today · +${d.new_users_week} this week`);
+  setTxt('statCreditsToday',d.credits_used_today);
+  setTxt('statCreditsYesterday',`Yesterday: ${d.credits_used_yesterday}`);
+  setTxt('statSessions',d.total_sessions);
+  setTxt('statSessionsToday',`${d.sessions_today} today · ${d.sessions_yesterday} yesterday`);
+  setTxt('statActiveToday',d.active_users_today);
+  setTxt('statActiveYesterday',`Yesterday: ${d.active_users_yesterday}`);
+  setTrend('trendUsers',  trnd(d.new_users_today,0));
+  setTrend('trendCredits',trnd(d.credits_used_today,d.credits_used_yesterday));
+  setTrend('trendSessions',trnd(d.sessions_today,d.sessions_yesterday));
+  setTrend('trendActive', trnd(d.active_users_today,d.active_users_yesterday));
+}
+function renderUserMini(u){
+  const a=u.filter(x=>x.is_active).length;
+  setTxt('uTotal',u.length); setTxt('uActive',a); setTxt('uInactive',u.length-a);
+}
+function renderActMini(rows){
+  const total=rows.reduce((s,r)=>s+(r.credits_used||0),0);
+  const avg=rows.length?Math.round(total/rows.length):0;
+  setTxt('aTotal',total.toLocaleString()); setTxt('aAvg',avg); setTxt('aCost',`₹${(total*0.40).toFixed(0)}`);
+}
+
+// ── CHART ─────────────────────────────────────────────
+function renderChart(rows){
+  const el=document.getElementById('chartBars');
+  if(!rows||!rows.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;margin:auto;">No data yet.</div>';return;}
+  const max=Math.max(...rows.map(r=>r.credits_used),1);
+  const total=rows.reduce((s,r)=>s+(r.credits_used||0),0);
+  setTxt('chartMeta',`${total} total · ${rows.length} days`);
+  el.innerHTML=rows.map(r=>{
+    const h=Math.max(4,Math.round((r.credits_used/max)*110));
+    return`<div class="bc"><div class="bar bgold" style="height:${h}px;"><div class="btip">${r.date_ist}<br>⚡ ${r.credits_used}</div></div><div class="blbl">${r.date_ist.slice(5)}</div></div>`;
+  }).join('');
+}
+
+// ── TOPICS ────────────────────────────────────────────
+function renderTopics(topics){
+  renderTopicList('topicsList',topics,8);
+  renderTopicList('topicsListFull',topics,20);
+  const m=topics.length?`${topics.length} topics`:'';
+  setTxt('topicsMeta',m); setTxt('topicsMetaFull',m);
+  const el=document.getElementById('topicsChart');
+  if(el&&topics.length){
+    const max=Math.max(...topics.map(t=>t.search_count),1);
+    el.innerHTML=topics.slice(0,12).map(t=>{
+      const h=Math.max(4,Math.round((t.search_count/max)*110));
+      return`<div class="bc"><div class="bar bblue" style="height:${h}px;"><div class="btip">${esc(t.title)}<br>🔍 ${t.search_count}</div></div><div class="blbl">${esc(t.title.slice(0,8))}</div></div>`;
+    }).join('');
+  }
+}
+function renderTopicList(id,topics,limit){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(!topics||!topics.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center;">No searches yet.</div>';return;}
+  const max=Math.max(...topics.map(t=>t.search_count),1);
+  el.innerHTML=topics.slice(0,limit).map((t,i)=>`
+    <div class="topic-row">
+      <div class="t-rank">${i+1}</div>
+      <div class="t-name" title="${esc(t.title)}">${esc(t.title)}</div>
+      <div class="t-track"><div class="t-fill" style="width:${Math.round((t.search_count/max)*100)}%"></div></div>
+      <div class="t-count">${t.search_count}</div>
+    </div>`).join('');
+}
+
+// ── USERS TABLE ───────────────────────────────────────
+function renderUsers(users,stats){
+  setTxt('userCountLbl',`${users.length} users`);
+  const sm={};
+  if(stats)stats.forEach(s=>{sm[s.email]=s;});
+  if(!users.length){document.getElementById('usersTable').innerHTML='<tr class="empty-row"><td colspan="7">No users yet.</td></tr>';return;}
+  document.getElementById('usersTable').innerHTML=users.map(u=>{
+    const s=sm[u.email]||{};
+    return`<tr onclick="openUser(${u.id})" style="cursor:pointer;">
+      <td><span class="em">${u.email}</span></td>
+      <td class="dt">${fmtDate(u.created_at)}</td>
+      <td class="dt">${s.last_active?fmtDate(s.last_active):'—'}</td>
+      <td><span class="badge bgo">⚡ ${s.total_credits||0}</span></td>
+      <td><span class="badge bb">${s.session_count||0}</span></td>
+      <td><span class="badge ${u.is_active?'bg':'br'}">${u.is_active?'● Active':'○ Off'}</span></td>
+      <td onclick="event.stopPropagation()">
+        <button class="ab ab-g" onclick="openGrant(${u.id},'${u.email}')">⚡ Credits</button>
+        ${u.is_active
+          ?`<button class="ab ab-d" onclick="cfToggle(${u.id},false,'${u.email}')">🚫</button>`
+          :`<button class="ab ab-e" onclick="cfToggle(${u.id},true,'${u.email}')">✅</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+function filterUsers(){
+  const q=document.getElementById('userSearch').value.toLowerCase();
+  renderUsers(q?_users.filter(u=>u.email.toLowerCase().includes(q)):_users,_stats);
+}
+
+// ── USER DETAIL MODAL ─────────────────────────────────
+function openUser(id){
+  const u=_users.find(x=>x.id===id);
+  const s=_stats.find(x=>x.email===u?.email)||{};
+  if(!u)return;
+  _curUser=u;
+  setTxt('umEmail',u.email);
+  setTxt('umSub',`User #${u.id} · Joined ${fmtDate(u.created_at)}`);
+  document.getElementById('umGrid').innerHTML=`
+    <div class="ud-item"><div class="ud-lbl">Total Credits Used</div><div class="ud-val">⚡ ${s.total_credits||0}</div></div>
+    <div class="ud-item"><div class="ud-lbl">Sessions</div><div class="ud-val">💬 ${s.session_count||0}</div></div>
+    <div class="ud-item"><div class="ud-lbl">Status</div><div class="ud-val">${u.is_active?'✅ Active':'🚫 Disabled'}</div></div>
+    <div class="ud-item"><div class="ud-lbl">Last Active</div><div class="ud-val">${s.last_active?fmtDate(s.last_active):'Never'}</div></div>
+  `;
+  const tb=document.getElementById('umToggle');
+  tb.textContent=u.is_active?'🚫 Disable':'✅ Enable';
+  tb.style.background=u.is_active?'var(--red-dim)':'var(--green-dim)';
+  tb.style.borderColor=u.is_active?'rgba(248,113,113,.3)':'rgba(52,211,153,.3)';
+  tb.style.color=u.is_active?'var(--red)':'var(--green)';
+  document.getElementById('userModal').classList.remove('hidden');
+}
+function grantFromModal(){hideM('userModal');if(_curUser)openGrant(_curUser.id,_curUser.email);}
+function toggleFromModal(){if(_curUser)cfToggle(_curUser.id,!_curUser.is_active,_curUser.email);hideM('userModal');}
+
+// ── CONFIRM MODAL ─────────────────────────────────────
+function showCf({icon,title,msg,okCls,okTxt,onOk}){
+  setTxt('cfIcon',icon); setTxt('cfTitle',title); setTxt('cfMsg',msg);
+  const btn=document.getElementById('cfOk');
+  btn.textContent=okTxt; btn.className=okCls;
+  btn.onclick=()=>{hideM('confirmModal');onOk();};
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+function cfToggle(id,activate,email){
+  showCf({
+    icon:activate?'✅':'🚫',
+    title:activate?'Enable User?':'Disable User?',
+    msg:`${activate?'Restore access for':'Block access for'} ${email}?`,
+    okCls:activate?'cf-ok':'cf-danger',
+    okTxt:activate?'Enable':'Disable',
+    onOk:()=>toggleUser(id,activate,email),
+  });
+}
+
+// ── CREDITS TABLE ─────────────────────────────────────
+function renderCredits(stats){
+  const total=stats.reduce((s,r)=>s+(r.total_credits||0),0);
+  setTxt('totalCreditsLbl',`${total.toLocaleString()} total`);
+  if(!stats.length){document.getElementById('creditsTable').innerHTML='<tr class="empty-row"><td colspan="6">No usage yet.</td></tr>';return;}
+  document.getElementById('creditsTable').innerHTML=stats.map(r=>{
+    const c=r.total_credits>=50?'br':r.total_credits>=20?'bgo':'bb';
+    return`<tr>
+      <td><span class="em">${r.email}</span></td>
+      <td><span class="badge ${c}">⚡ ${r.total_credits}</span></td>
+      <td><span class="badge bb">💬 ${r.session_count}</span></td>
+      <td class="dt">${r.last_active?fmtDate(r.last_active):'—'}</td>
+      <td><span class="badge ${r.is_active?'bg':'br'}">${r.is_active?'Active':'Inactive'}</span></td>
+      <td><button class="ab ab-g" onclick="openGrant(0,'${r.email}')">⚡ Grant</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DAILY TABLE ───────────────────────────────────────
+function renderDaily(rows){
+  if(!rows.length){document.getElementById('dailyTable').innerHTML='<tr class="empty-row"><td colspan="5">No activity yet.</td></tr>';return;}
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('dailyTable').innerHTML=[...rows].reverse().map(r=>{
+    const cost=(r.credits_used*0.40).toFixed(2);
+    const isTd=r.date_ist===today;
+    return`<tr class="${isTd?'today-row':''}">
+      <td style="font-weight:600;color:var(--text)">${r.date_ist}${isTd?' <span class="badge bg" style="font-size:9px">TODAY</span>':''}</td>
+      <td><span class="badge bgo">⚡ ${r.credits_used}</span></td>
+      <td style="color:var(--text3)">${r.active_users}</td>
+      <td style="color:var(--text3)">~${Math.floor((r.credits_used||0)/3)}</td>
+      <td style="color:var(--red);font-family:var(--fm)">₹${cost}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── GRANTS TABLE ──────────────────────────────────────
+function renderGrants(grants){
+  setTxt('grantCountLbl',`${grants.length} grants`);
+  if(!grants.length){document.getElementById('grantsTable').innerHTML='<tr class="empty-row"><td colspan="4">No grants yet.</td></tr>';return;}
+  document.getElementById('grantsTable').innerHTML=grants.map(g=>`
+    <tr>
+      <td><span class="em">${g.email}</span></td>
+      <td><span class="badge bgo">+${g.credits} credits</span></td>
+      <td style="color:var(--text3);font-size:12px">${esc(g.reason)||'—'}</td>
+      <td class="dt">${fmtDate(g.granted_at)}</td>
+    </tr>`).join('');
+}
+
+// ── CHATS TABLE ───────────────────────────────────────
+function renderChats(chats){
+  const cnt=`${chats.length} recent`;
+  setTxt('chatCount',cnt); setTxt('chatCount2',cnt);
+  const full=chats.length?chats.map(c=>`
+    <tr><td><span class="em">${c.email}</span></td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.title)}">${esc(c.title)||'<em style="color:var(--text3)">Untitled</em>'}</td>
+    <td><span class="badge bb">${c.msg_count}</span></td>
+    <td class="dt">${fmtDate(c.created_at)}</td>
+    <td class="dt">${fmtDate(c.updated_at)}</td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="5">No sessions yet.</td></tr>';
+  const ov=chats.length?chats.slice(0,8).map(c=>`
+    <tr><td><span class="em">${c.email}</span></td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.title)}">${esc(c.title)||'<em style="color:var(--text3)">Untitled</em>'}</td>
+    <td><span class="badge bb">${c.msg_count}</span></td>
+    <td class="dt">${fmtDate(c.updated_at)}</td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="4">No sessions yet.</td></tr>';
+  if(document.getElementById('chatsFull'))    document.getElementById('chatsFull').innerHTML=full;
+  if(document.getElementById('chatsOv'))      document.getElementById('chatsOv').innerHTML=ov;
+}
+
+// ── PURCHASES ─────────────────────────────────────────
+function renderPurchases(purchases,rev){
+  const avg=purchases.length?Math.round(rev/purchases.length):0;
+  setTxt('revTotal',`₹${(rev||0).toLocaleString()}`);
+  setTxt('revCount',purchases.length);
+  setTxt('revAvg',`₹${avg}`);
+  setTxt('purchaseCount',`${purchases.length} purchases`);
+  if(!purchases.length)return;
+  document.getElementById('purchasesTable').innerHTML=purchases.map(p=>`
+    <tr>
+      <td><span class="em">${p.email}</span></td>
+      <td><span class="badge bp">${p.pack||'—'}</span></td>
+      <td style="color:var(--gold);font-family:var(--fm);font-weight:700">₹${p.amount_paid}</td>
+      <td><span class="badge bb">+${p.credits_added||'—'}</span></td>
+      <td style="font-size:11px;font-family:var(--fm);color:var(--text3)" title="${p.payment_id||''}">${p.payment_id?p.payment_id.slice(0,18)+'…':'—'}</td>
+      <td class="dt">${fmtDate(p.created_at)}</td>
+    </tr>`).join('');
+}
+
+// ── FEEDBACKS ─────────────────────────────────────────
+let _feedbacks=[], _fbOrigIdx=[];
+function renderFeedbacks(feedbacks, stats){
+  _feedbacks=feedbacks;
+  // feedbacks are reversed (most-recent first); original index = (total-1) - position
+  _fbOrigIdx=feedbacks.map((_,i)=>stats.total-1-i);
+
+  setTxt('fbTotal',    stats.total||0);
+  setTxt('fbUp',       stats.up||0);
+  setTxt('fbDown',     stats.down||0);
+
+  // sections needing attention
+  const attn=Object.values(stats.sections||{}).filter(s=>s.needs_attention).length;
+  setTxt('fbNeedsAttention', attn||0);
+  setTxt('fbCountLbl', `${feedbacks.length} entries`);
+  setTxt('fbSectionMeta', `${Object.keys(stats.sections||{}).length} sections`);
+
+  // Section breakdown bars
+  const secEl=document.getElementById('fbSectionList');
+  const secs=Object.entries(stats.sections||{});
+  if(!secs.length){secEl.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">No data yet.</div>';}
+  else{
+    const maxCount=Math.max(...secs.map(([,v])=>v.up+v.down));
+    secEl.innerHTML=secs.sort((a,b)=>(b[1].up+b[1].down)-(a[1].up+a[1].down)).map(([sec,v])=>{
+      const total=v.up+v.down;
+      const pct=maxCount>0?Math.round((total/maxCount)*100):0;
+      const attnBadge=v.needs_attention?'<span class="badge bo" style="font-size:10px;padding:2px 6px;">⚠ review</span>':'';
+      return`<div class="topic-row">
+        <span class="t-rank" style="width:50px;font-size:11px;color:var(--text2);font-weight:600">§${sec}</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--green)">👍${v.up}</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--red)">👎${v.down}</span>
+        <div class="t-track" style="flex:3"><div class="t-fill" style="width:${pct}%;background:${v.needs_attention?'linear-gradient(90deg,var(--red),rgba(248,113,113,.3))':'linear-gradient(90deg,var(--green),rgba(52,211,153,.3))'}"></div></div>
+        ${attnBadge}
+      </div>`;
+    }).join('');
+  }
+
+  // Comments panel
+  const allComments=feedbacks.filter(f=>f.comment);
+  setTxt('fbCommentMeta',`${allComments.length} with comments`);
+  const cmtEl=document.getElementById('fbCommentList');
+  if(!allComments.length){cmtEl.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">No comments yet.</div>';}
+  else{
+    cmtEl.innerHTML=allComments.map(f=>`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span style="font-size:13px">${f.rating==='up'?'👍':'👎'}</span>
+          <span style="font-size:11px;font-family:var(--fm);color:var(--gold)">§${esc(f.section_1961)}</span>
+          <span style="font-size:10px;color:var(--text3);margin-left:auto">${fmtDate(f.ts)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);font-style:italic;line-height:1.5">"${esc(f.comment)}"</div>
+      </div>`).join('');
+  }
+
+  _renderFeedbackRows(feedbacks, _fbOrigIdx);
+}
+function _renderFeedbackRows(list, origIdx){
+  const tbody=document.getElementById('feedbacksTable');
+  if(!list.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No feedbacks yet.</td></tr>';return;}
+  tbody.innerHTML=list.map((f,i)=>{
+    const idx=origIdx?origIdx[i]:i;
+    const up=f.rating==='up';
+    return`<tr>
+      <td class="dt">${fmtDate(f.ts)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px" title="${esc(f.query)}">${esc(f.query)||'—'}</td>
+      <td><span class="badge bgo">§${esc(f.section_1961)}</span></td>
+      <td><span class="badge bb">§${esc(f.section_2025)}</span></td>
+      <td><span class="badge ${up?'bg':'br'}" style="font-size:13px">${up?'👍':'👎'}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text3)" title="${esc(f.comment)}">${esc(f.comment)||'<em>—</em>'}</td>
+      <td><button class="ab-sm" title="Delete" onclick="deleteFeedback(${idx})">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+function filterFeedbacks(){
+  const q=(document.getElementById('fbSearch').value||'').toLowerCase();
+  if(!q){_renderFeedbackRows(_feedbacks,_fbOrigIdx);return;}
+  const filtered=[], filteredIdx=[];
+  _feedbacks.forEach((f,i)=>{
+    if((f.query||'').toLowerCase().includes(q)||(f.section_1961||'').toLowerCase().includes(q)||(f.section_2025||'').toLowerCase().includes(q)||(f.comment||'').toLowerCase().includes(q)){
+      filtered.push(f); filteredIdx.push(_fbOrigIdx[i]);
+    }
+  });
+  _renderFeedbackRows(filtered,filteredIdx);
+}
+async function deleteFeedback(origIdx){
+  if(!confirm('Delete this feedback entry?'))return;
+  try{
+    const res=await fetch(`/admin/feedbacks/${origIdx}`,{method:'DELETE',headers:ah()});
+    const d=await res.json();
+    if(res.ok){toast(d.message,'success');loadAll();}
+    else toast(d.detail||'Delete failed.','error');
+  }catch(e){toast('Network error.','error');}
+}
+
+// ── TOGGLE USER ───────────────────────────────────────
+async function toggleUser(id,activate,email){
+  try{
+    const res=await fetch('/admin/toggle-user',{method:'POST',headers:ah(),body:JSON.stringify({user_id:id,is_active:activate})});
+    const d=await res.json();
+    if(res.ok){toast(d.message,'success');loadAll();}
+    else toast(d.detail||'Failed.','error');
+  }catch(e){toast('Network error.','error');}
+}
+
+// ── GRANT CREDITS ─────────────────────────────────────
+function openGrant(id,email){
+  setTxt('grantSub',`Add credits to: ${email}`);
+  document.getElementById('grantUserId').value=id;
+  document.getElementById('grantAmount').value='';
+  document.getElementById('grantReason').value='';
+  setTxt('grantMsg','');
+  document.getElementById('grantMsg').className='m-msg';
+  const btn=document.getElementById('grantBtn');
+  btn.disabled=false; btn.textContent='Add Credits →';
+  document.getElementById('grantModal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('grantAmount').focus(),120);
+}
+async function submitGrant(){
+  const id=parseInt(document.getElementById('grantUserId').value);
+  const cr=parseInt(document.getElementById('grantAmount').value);
+  const reason=document.getElementById('grantReason').value.trim()||'Manual grant by admin';
+  const btn=document.getElementById('grantBtn');
+  if(!cr||cr<1){setMMsg('grantMsg','Enter a valid amount (min 1).','er');return;}
+  if(cr>500){setMMsg('grantMsg','Max 500 credits per grant.','er');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Adding…';
+  try{
+    const res=await fetch('/admin/grant-credits',{method:'POST',headers:ah(),body:JSON.stringify({user_id:id,credits:cr,reason})});
+    const d=await res.json();
+    if(res.ok){
+      setMMsg('grantMsg','✓ '+d.message,'ok');
+      toast(d.message,'success');
+      setTimeout(()=>{hideM('grantModal');loadAll();},1200);
+    }else{
+      setMMsg('grantMsg',d.detail||'Failed.','er');
+      btn.disabled=false; btn.textContent='Add Credits →';
+    }
+  }catch(e){
+    setMMsg('grantMsg','Network error.','er');
+    btn.disabled=false; btn.textContent='Add Credits →';
+  }
+}
+
+// ── CSV EXPORT ────────────────────────────────────────
+function exportCSV(type){
+  fetch(`/admin/export/${type}`,{headers:ah()})
+    .then(r=>r.ok?r.blob():Promise.reject(r.status))
+    .then(blob=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`tax Cookies_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      toast(`${type.charAt(0).toUpperCase()+type.slice(1)} CSV downloaded.`,'success');
+    })
+    .catch(()=>toast('Export failed.','error'));
+}
+
+// ── MODALS ────────────────────────────────────────────
+function hideM(id){document.getElementById(id).classList.add('hidden');}
+function handleOv(e,id){if(e.target===document.getElementById(id))hideM(id);}
+function setMMsg(id,msg,type){const el=document.getElementById(id);el.textContent=msg;el.className=`m-msg ${type}`;}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    ['grantModal','confirmModal','userModal'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&!el.classList.contains('hidden'))hideM(id);
+    });
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='r'&&document.getElementById('adminShell').style.display!=='none'){
+    e.preventDefault();loadAll();
+  }
+  if(document.getElementById('adminShell').style.display!=='none'&&!e.ctrlKey&&!e.metaKey&&e.target.tagName!=='INPUT'){
+    const m={'1':'overview','2':'users','3':'activity','4':'revenue','5':'grants','6':'chats','7':'topics','8':'feedbacks'};
+    if(m[e.key]){e.preventDefault();showPanel(m[e.key]);}
+  }
+});
+
+// ── HELPERS ───────────────────────────────────────────
+function setTxt(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function fmtDate(s){
+  if(!s)return'—';
+  const d=new Date(s.replace(' ','T'));
+  if(isNaN(d))return s;
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function esc(s){
+  if(!s)return'';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──────────────────────────────────────────────
+if(sessionStorage.getItem(AKEY))showAdmin();
+</script>
+</body>
+</html>

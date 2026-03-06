@@ -1,0 +1,26 @@
+[
+  {
+    "ts": "2026-02-21T13:12:55",
+    "query": "TDS on salary Section 192",
+    "section_1961": "192",
+    "section_2025": "392",
+    "rating": "up",
+    "comment": ""
+  },
+  {
+    "ts": "2026-02-22T21:20:26",
+    "query": "Section 80C",
+    "section_1961": "80C",
+    "section_2025": "123",
+    "rating": "up",
+    "comment": ""
+  },
+  {
+    "ts": "2026-02-23T11:41:40",
+    "query": "TDS on salary Section 192",
+    "section_1961": "192",
+    "section_2025": "392",
+    "rating": "up",
+    "comment": ""
+  }
+]
