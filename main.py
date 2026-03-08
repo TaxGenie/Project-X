@@ -208,9 +208,8 @@ def chat_followup(
         "credits_remaining" : remaining,
     }
 
-
 # ══════════════════════════════════════════════════════════════════════════════
-# /download-word  — Word export download  (costs COST_WORD_EXPORT credits)
+# /download-word  — Word export download  (no credit cost)
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/download-word")
 def download_word(token: str = Query(default="")):
@@ -221,25 +220,15 @@ def download_word(token: str = Query(default="")):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated. Please sign in.")
 
-    ok, remaining = deduct_credits(user["user_id"], COST_WORD_EXPORT)
-    if not ok:
-        raise HTTPException(
-            status_code=402,
-            detail=(
-                f"Not enough credits. You have {remaining} credit(s) left today. "
-                f"Credits reset at midnight IST."
-            )
-        )
-
+    # Directly return file without deducting credits
     if LAST_GENERATED_FILE and os.path.exists(LAST_GENERATED_FILE):
         return FileResponse(
             LAST_GENERATED_FILE,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            filename="TEJAS_Summary.docx",
-            headers={"X-Credits-Remaining": str(remaining)},
+            filename="Tax Cookies_Analysis.docx",
         )
-    raise HTTPException(status_code=404, detail="No file generated yet.")
 
+    raise HTTPException(status_code=404, detail="No file generated yet.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FEEDBACK  (no credit cost)
