@@ -151,7 +151,8 @@ INSTRUCTIONS
 OUTPUT FORMAT — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-=== SECTION 3: KEY SUMMARY ===
+=== SECTION: KEY SUMMARY ===
+[1-2 sentences. Provide the corresponding Section number under the Income-tax Act, 2025 and clearly state which Section of the Income-tax Act, 1961 it has been transformed or renumbered from.]
 
 **What this provision does**
 [3–4 sentences. Explain the purpose and who it affects in everyday language.]
@@ -168,8 +169,12 @@ OUTPUT FORMAT — FOLLOW EXACTLY
 **What happens if you don't comply**
 [Consequences: interest, penalty, prosecution — with the specific section references and amounts if mentioned in the source text. If not mentioned, say so.]
 
+The following worked examples are purely illustrative and are intended only to explain the operation of this specific section in a simplified manner. The calculations and assumptions used are limited to the scope of this provision and may not consider the interaction with other sections, exemptions, deductions, or overriding provisions of the Income-tax Act, 2025 and related rules.
+
+Accordingly, in real-life situations, the actual tax treatment may differ when the provision is read in conjunction with other applicable sections of the Act.
+
 **Worked example**
-[A detailed, realistic numerical example using Indian names and figures (e.g. Rajesh runs a trading business, Priya is a salaried employee). Walk through EVERY calculation step. Show the maths. Make it long enough to cover edge cases if they exist in the source text — aim for at least 3–4 sub-scenarios if the provision has multiple rates or thresholds.]
+[A detailed, realistic numerical example using Indian names and figures (e.g. Rajesh runs a trading business, Priya is a salaried employee, Neha is a House property owner, Rahul is a investor earning capital gains, Arjun is a Investor earning passive income like interest, dividend, etc, Arun is earning income from providing professional services). Walk through EVERY calculation step. Show the maths. Make it long enough to cover edge cases if they exist in the source text — aim for at least 3–4 sub-scenarios if the provision has multiple rates or thresholds.]
 {"**Note on 2025 Act structure**" + chr(10) + f"This provision was formerly {sec_name_1961} — a standalone section in the Income Tax Act 1961. In the 2025 Act it is now part of Section 393's consolidated TDS table. Practically, this means all TDS compliance (certificates, returns, challan codes) now references Section 393 rather than the old section number." if is_tds else ""}
 """
 
