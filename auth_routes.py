@@ -4,15 +4,87 @@ Mount in main.py with:  app.include_router(auth_router)
 """
 import re
 import uuid
+import sqlite3
+import os
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from typing import Optional
 
 from auth import send_otp_email, login_with_otp, logout, get_current_user_from_token
 from database import (
     get_credit_summary, list_chat_sessions,
     get_chat_session, delete_chat_session, save_chat_session
 )
+
+DB_PATH = os.getenv("DB_PATH", "tejas_users.db")
+
+# ── Profession options ────────────────────────────────────────────────────────
+PROFESSION_OPTIONS = [
+    "Chartered Accountant",
+    "Advocate / Tax Lawyer",
+    "Company Secretary",
+    "Cost Accountant (CMA)",
+    "Tax Consultant",
+    "Finance Professional",
+    "CA Student / Articleship",
+    "Law Student",
+    "Business Owner / Entrepreneur",
+    "Individual / Self-filing",
+    "Academic / Researcher",
+    "Other",
+]
+
+# ── Intended use options ──────────────────────────────────────────────────────
+USE_CASE_OPTIONS = [
+    "Professional Tax Advisory",
+    "Client Advisory & Filing",
+    "Legal Research & Drafting",
+    "Academic Research",
+    "Personal Tax Planning",
+    "Comparative Law Study (1961 vs 2025)",
+    "Tax Litigation Support",
+    "Learning & Study",
+    "Business Compliance",
+    "Other",
+]
+
+
+def _ensure_profile_columns():
+    """Add profile columns to users table if they don't exist yet (safe migration)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        for col, typedef in [
+            ("full_name",    "TEXT DEFAULT ''"),
+            ("profession",   "TEXT DEFAULT ''"),
+            ("organisation", "TEXT DEFAULT ''"),
+            ("use_case",     "TEXT DEFAULT ''"),
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE users ADD COLUMN {col} {typedef}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[Auth] Profile column migration warning: {e}")
+
+
+def _save_user_profile(user_id: int, full_name: str, profession: str,
+                       organisation: str, use_case: str):
+    """Persist profile fields for a user."""
+    _ensure_profile_columns()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users
+        SET full_name=?, profession=?, organisation=?, use_case=?
+        WHERE id=?
+    """, (full_name.strip(), profession.strip(), organisation.strip(),
+          use_case.strip(), user_id))
+    conn.commit()
+    conn.close()
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
@@ -42,8 +114,28 @@ class SendOTPRequest(BaseModel):
     email: str
 
 class VerifyOTPRequest(BaseModel):
-    email: str
-    otp:   str
+    email:        str
+    otp:          str
+    # Optional profile fields — collected at registration in the login modal
+    full_name:    Optional[str] = ""
+    profession:   Optional[str] = ""
+    organisation: Optional[str] = ""
+    use_case:     Optional[str] = ""
+
+class UpdateProfileRequest(BaseModel):
+    full_name:    str = ""
+    profession:   str = ""
+    organisation: str = ""
+    use_case:     str = ""
+
+# ── Meta endpoint — return dropdown options for the login modal ───────────────
+@auth_router.get("/profile-options")
+async def profile_options():
+    """Return valid dropdown choices for profession and use_case."""
+    return {
+        "professions": PROFESSION_OPTIONS,
+        "use_cases":   USE_CASE_OPTIONS,
+    }
 
 
 @auth_router.post("/send-otp")
@@ -62,7 +154,7 @@ async def send_otp(req: SendOTPRequest):
 
 @auth_router.post("/verify-otp")
 async def verify_otp_endpoint(req: VerifyOTPRequest):
-    """Verify OTP and return a JWT session token."""
+    """Verify OTP and return a JWT session token. Saves profile if provided."""
     email = req.email.strip().lower()
     otp   = req.otp.strip()
 
@@ -75,10 +167,40 @@ async def verify_otp_endpoint(req: VerifyOTPRequest):
     if not success:
         raise HTTPException(status_code=401, detail=message)
 
+    # Save profile fields if provided (new users fill these during sign-up)
+    if any([req.full_name, req.profession, req.organisation, req.use_case]):
+        _save_user_profile(
+            user_id      = data["user"]["id"],
+            full_name    = req.full_name    or "",
+            profession   = req.profession   or "",
+            organisation = req.organisation or "",
+            use_case     = req.use_case     or "",
+        )
+
     return {
         "token": data["token"],
         "user":  data["user"],
     }
+
+
+@auth_router.post("/update-profile")
+async def update_profile(req: UpdateProfileRequest,
+                         user: dict = Depends(get_current_user)):
+    """Update profile for the currently logged-in user."""
+    if req.profession and req.profession not in PROFESSION_OPTIONS:
+        raise HTTPException(status_code=400,
+            detail=f"Invalid profession. Choose from: {', '.join(PROFESSION_OPTIONS)}")
+    if req.use_case and req.use_case not in USE_CASE_OPTIONS:
+        raise HTTPException(status_code=400,
+            detail=f"Invalid use_case. Choose from: {', '.join(USE_CASE_OPTIONS)}")
+    _save_user_profile(
+        user_id      = user["user_id"],
+        full_name    = req.full_name,
+        profession   = req.profession,
+        organisation = req.organisation,
+        use_case     = req.use_case,
+    )
+    return {"saved": True, "message": "Profile updated successfully."}
 
 
 @auth_router.post("/logout")
@@ -90,11 +212,26 @@ async def logout_endpoint(user: dict = Depends(get_current_user)):
 @auth_router.get("/me")
 async def me(user: dict = Depends(get_current_user)):
     """Return current user profile + credit summary."""
+    _ensure_profile_columns()
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT full_name, profession, organisation, use_case
+        FROM users WHERE id = ?
+    """, (user["user_id"],))
+    row = cur.fetchone()
+    conn.close()
     credits = get_credit_summary(user["user_id"])
+    profile = dict(row) if row else {}
     return {
         "user": {
-            "id":    user["user_id"],
-            "email": user["email"],
+            "id":           user["user_id"],
+            "email":        user["email"],
+            "full_name":    profile.get("full_name",    ""),
+            "profession":   profile.get("profession",   ""),
+            "organisation": profile.get("organisation", ""),
+            "use_case":     profile.get("use_case",     ""),
         },
         "credits": credits,
     }
