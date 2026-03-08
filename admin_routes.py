@@ -106,6 +106,17 @@ def ensure_tables(cur):
             granted_at TEXT    DEFAULT (datetime('now','localtime'))
         )
     """)
+    # Safe profile column migration — no-op if columns already exist
+    for col, typedef in [
+        ("full_name",    "TEXT DEFAULT ''"),
+        ("profession",   "TEXT DEFAULT ''"),
+        ("organisation", "TEXT DEFAULT ''"),
+        ("use_case",     "TEXT DEFAULT ''"),
+    ]:
+        try:
+            cur.execute(f"ALTER TABLE users ADD COLUMN {col} {typedef}")
+        except Exception:
+            pass
 
 
 # ── Serve admin HTML ─────────────────────────────────────────────────────────
@@ -144,7 +155,7 @@ async def admin_data(request: Request):
     cur.execute("SELECT COUNT(*) FROM users WHERE DATE(created_at) >= ?", (week_ago,))
     new_users_week = cur.fetchone()[0]
 
-    cur.execute("SELECT id, email, created_at, is_active FROM users ORDER BY created_at DESC")
+    cur.execute("SELECT id, email, created_at, is_active, full_name, profession, organisation, use_case FROM users ORDER BY created_at DESC")
     users = [dict(r) for r in cur.fetchall()]
 
     # ── Credits today vs yesterday ───────────────────────────────────────────
@@ -172,7 +183,8 @@ async def admin_data(request: Request):
 
     # ── Credits per user (subqueries to avoid JOIN multiplication) ───────────
     cur.execute("""
-        SELECT u.id, u.email, u.is_active,
+        SELECT u.id, u.email, u.is_active, u.full_name, u.profession,
+               u.organisation, u.use_case, u.created_at,
                COALESCE(
                    (SELECT SUM(dc2.credits_used) FROM daily_credits dc2 WHERE dc2.user_id = u.id),
                0) AS total_credits,
@@ -196,16 +208,30 @@ async def admin_data(request: Request):
     daily_activity = [dict(r) for r in cur.fetchall()]
 
     # ── Recent chats ─────────────────────────────────────────────────────────
-    cur.execute("""
-        SELECT u.email, ch.title, ch.session_id,
-               ch.created_at, ch.updated_at,
-               json_array_length(ch.messages) AS msg_count
-        FROM   chat_history ch
-        JOIN   users u ON ch.user_id = u.id
-        ORDER  BY ch.updated_at DESC
-        LIMIT  30
-    """)
-    recent_chats = [dict(r) for r in cur.fetchall()]
+    try:
+        cur.execute("""
+            SELECT u.email, ch.title, ch.session_id,
+                   ch.created_at, ch.updated_at,
+                   json_array_length(ch.messages) AS message_count
+            FROM   chat_history ch
+            JOIN   users u ON ch.user_id = u.id
+            ORDER  BY ch.updated_at DESC
+            LIMIT  50
+        """)
+        recent_chats = [dict(r) for r in cur.fetchall()]
+    except Exception:
+        try:
+            cur.execute("""
+                SELECT u.email, ch.title, ch.session_id,
+                       ch.created_at, ch.updated_at,
+                       0 AS message_count
+                FROM   chat_history ch
+                JOIN   users u ON ch.user_id = u.id
+                ORDER  BY ch.updated_at DESC LIMIT 50
+            """)
+            recent_chats = [dict(r) for r in cur.fetchall()]
+        except Exception:
+            recent_chats = []
 
     # ── Top searched topics ───────────────────────────────────────────────────
     cur.execute("""
@@ -255,6 +281,45 @@ async def admin_data(request: Request):
         "sections":   fb_summary["sections"],
     }
 
+    # ── User profile analytics ────────────────────────────────────────────────
+    cur.execute("""
+        SELECT profession, COUNT(*) AS count
+        FROM users
+        WHERE profession IS NOT NULL AND profession != ''
+        GROUP BY profession ORDER BY count DESC
+    """)
+    profession_dist = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+        SELECT use_case, COUNT(*) AS count
+        FROM users
+        WHERE use_case IS NOT NULL AND use_case != ''
+        GROUP BY use_case ORDER BY count DESC
+    """)
+    use_case_dist = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+        SELECT organisation, COUNT(*) AS count
+        FROM users
+        WHERE organisation IS NOT NULL AND organisation != ''
+        GROUP BY organisation ORDER BY count DESC LIMIT 20
+    """)
+    org_dist = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("SELECT COUNT(*) FROM users WHERE profession IS NOT NULL AND profession != ''")
+    users_with_profile = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT u.email, u.full_name, u.profession, u.use_case,
+               COALESCE(SUM(dc.credits_used),0) AS total_credits,
+               COUNT(DISTINCT ch.session_id) AS sessions
+        FROM users u
+        LEFT JOIN daily_credits dc ON dc.user_id = u.id
+        LEFT JOIN chat_history ch ON ch.user_id = u.id
+        GROUP BY u.id ORDER BY total_credits DESC LIMIT 10
+    """)
+    power_users = [dict(r) for r in cur.fetchall()]
+
     conn.close()
 
     return {
@@ -278,6 +343,11 @@ async def admin_data(request: Request):
         "feedbacks":              feedbacks,
         "feedback_stats":         feedback_stats,
         "purchases":              purchases,
+        "profession_dist":        profession_dist,
+        "use_case_dist":          use_case_dist,
+        "org_dist":               org_dist,
+        "users_with_profile":     users_with_profile,
+        "power_users":            power_users,
     }
 
 
@@ -288,7 +358,8 @@ async def export_users_csv(request: Request):
     conn = get_db()
     cur  = conn.cursor()
     cur.execute("""
-        SELECT u.id, u.email, u.created_at, u.is_active,
+        SELECT u.id, u.email, u.full_name, u.profession, u.organisation, u.use_case,
+               u.created_at, u.is_active,
                COALESCE((SELECT SUM(dc.credits_used) FROM daily_credits dc WHERE dc.user_id=u.id),0) AS total_credits,
                (SELECT COUNT(*) FROM chat_history ch WHERE ch.user_id=u.id) AS total_sessions,
                (SELECT MAX(ch2.updated_at) FROM chat_history ch2 WHERE ch2.user_id=u.id) AS last_active
@@ -298,10 +369,12 @@ async def export_users_csv(request: Request):
     conn.close()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID","Email","Joined","Active","Total Credits Used","Total Sessions","Last Active"])
+    writer.writerow(["ID","Email","Name","Profession","Organisation","Intended Use",
+                     "Joined","Active","Total Credits Used","Total Sessions","Last Active"])
     for r in rows:
-        writer.writerow([r["id"], r["email"], r["created_at"],
-                         "Yes" if r["is_active"] else "No",
+        writer.writerow([r["id"], r["email"], r["full_name"] or "", r["profession"] or "",
+                         r["organisation"] or "", r["use_case"] or "",
+                         r["created_at"], "Yes" if r["is_active"] else "No",
                          r["total_credits"], r["total_sessions"],
                          r["last_active"] or "Never"])
     output.seek(0)
@@ -467,3 +540,66 @@ async def export_feedbacks_csv(request: Request):
     fname = f"taxcookies_feedbacks_{datetime.date.today().isoformat()}.csv"
     return StreamingResponse(iter([output.getvalue()]), media_type="text/csv",
                              headers={"Content-Disposition": f"attachment; filename={fname}"})
+
+
+# ── Bulk credit grant ────────────────────────────────────────────────────────
+class BulkGrantRequest(BaseModel):
+    user_ids: list
+    credits:  int
+    reason:   str = "Bulk grant by admin"
+
+@admin_router.post("/bulk-grant")
+async def bulk_grant(req: BulkGrantRequest, request: Request):
+    require_admin(request)
+    if req.credits <= 0:
+        raise HTTPException(status_code=400, detail="Credits must be positive.")
+    conn = get_db()
+    cur  = conn.cursor()
+    ensure_tables(cur)
+    today = datetime.date.today().isoformat()
+    success, failed = [], []
+    for uid in req.user_ids:
+        try:
+            cur.execute("SELECT id, email FROM users WHERE id = ?", (uid,))
+            user = cur.fetchone()
+            if not user:
+                failed.append(uid); continue
+            cur.execute("SELECT id, credits_used FROM daily_credits WHERE user_id=? AND date_ist=?", (uid, today))
+            row = cur.fetchone()
+            if row:
+                cur.execute("UPDATE daily_credits SET credits_used=? WHERE id=?",
+                            (max(0, row["credits_used"] - req.credits), row["id"]))
+            else:
+                cur.execute("INSERT INTO daily_credits (user_id, date_ist, credits_used) VALUES (?,?,?)",
+                            (uid, today, -req.credits))
+            cur.execute("INSERT INTO credit_grants (user_id, credits, reason) VALUES (?,?,?)",
+                        (uid, req.credits, req.reason))
+            success.append(user["email"])
+        except Exception:
+            failed.append(uid)
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "granted_to": len(success), "failed": len(failed),
+            "message": f"{req.credits} credits granted to {len(success)} users."}
+
+
+# ── Bulk toggle active ───────────────────────────────────────────────────────
+class BulkToggleRequest(BaseModel):
+    user_ids:  list
+    is_active: bool
+
+@admin_router.post("/bulk-toggle")
+async def bulk_toggle(req: BulkToggleRequest, request: Request):
+    require_admin(request)
+    conn = get_db()
+    cur  = conn.cursor()
+    for uid in req.user_ids:
+        try:
+            cur.execute("UPDATE users SET is_active = ? WHERE id = ?",
+                        (1 if req.is_active else 0, uid))
+        except Exception:
+            pass
+    conn.commit()
+    conn.close()
+    verb = "enabled" if req.is_active else "disabled"
+    return {"status": "ok", "message": f"{len(req.user_ids)} users {verb}."}
