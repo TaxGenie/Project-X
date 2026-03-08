@@ -129,7 +129,7 @@ function buildCover() {
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: sp(0, 60),
-            children: [ R('TaxGenie', { font:'Georgia', size:88, bold:true, color:'C9A84C' }) ],
+            children: [ R('Tax Cookies', { font:'Georgia', size:88, bold:true, color:'C9A84C' }) ],
           }),
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -300,7 +300,7 @@ var docHeader = new Header({
     spacing: sp(0, 80),
     tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
     children: [
-      R('TaxGenie', { size:16, bold:true, color:C.NAVY }),
+      R('Tax Cookies', { size:16, bold:true, color:C.NAVY }),
       R('  ·  Income Tax Act 2025 — Key Summary', { size:16, color:C.MUTED }),
       R('\t' + query.substring(0,60), { size:16, italics:true, color:C.MUTED }),
     ],
@@ -356,7 +356,7 @@ children.push(new Paragraph({
   spacing: sp(200, 100),
   alignment: AlignmentType.CENTER,
   children: [
-    R('TaxGenie', { font:'Georgia', size:20, bold:true, color:C.GOLD }),
+    R('Tax Cookies', { font:'Georgia', size:20, bold:true, color:C.GOLD }),
     R('  Where Every Tax Query Finds an Answer ', { size:18, italics:true, color:C.MUTED }),
   ],
 }));
