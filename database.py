@@ -14,10 +14,10 @@ from psycopg2.extras import RealDictCursor
 DAILY_CREDIT_LIMIT   = 20   # free credits per user per day
 COST_KEY_SUMMARY     = 3    # generate_key_summary
 COST_CHAT_MESSAGE    = 1    # each chat follow-up
-COST_WORD_EXPORT     = 1    # Word document download
+COST_WORD_EXPORT     = 0    # Word document download
 
 OTP_EXPIRY_MINUTES   = 10
-SESSION_EXPIRY_DAYS  = 30
+SESSION_EXPIRY_DAYS  = 300
 
 
 def _conn():
