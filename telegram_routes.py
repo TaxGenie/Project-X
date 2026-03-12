@@ -5,7 +5,6 @@ from database import get_due_digest_subscriptions, mark_digest_sent
 tg_router = APIRouter(prefix="/webhook", tags=["Telegram"])
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TG_API   = f"https://api.telegram.org/bot{TG_TOKEN}"
-BASE_URL = os.getenv("BASE_URL", "https://taxcookies.in")
 
 @tg_router.post("/telegram")
 async def telegram_webhook(request: Request):
@@ -51,23 +50,41 @@ async def send_menu(chat_id: int):
     )
 
 async def handle_search(chat_id: int, query: str):
+    import re as _re
     await send(chat_id, f"🔍 Searching: *{query}*...")
-    async with httpx.AsyncClient(timeout=20) as c:
-        resp = await c.get(
-            f"{BASE_URL}/case-law",
-            params={"q": query, "page_size": 3},
-            headers={"Authorization": f"Bearer {os.getenv('INTERNAL_API_KEY')}"}
-        )
-    results = resp.json().get("results", [])
-    if not results:
+    try:
+        ik_token = os.getenv("INDIANKANOON_API_TOKEN", "")
+        ik_query = query if "income tax" in query.lower() else f"{query} income tax"
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as c:
+            resp = await c.post(
+                "https://api.indiankanoon.org/search/",
+                data={"formInput": ik_query, "pagenum": "0"},
+                headers={"Authorization": f"Token {ik_token}", "Accept": "application/json"}
+            )
+        if resp.status_code != 200:
+            await send(chat_id, f"❌ Search failed (status {resp.status_code}). Try again later.")
+            return
+        docs = resp.json().get("docs", [])
+    except Exception as e:
+        await send(chat_id, "❌ Search error. Please try again later.")
+        print(f"[Telegram Search Error] {e}")
+        return
+
+    if not docs:
         await send(chat_id, f"❌ No results for *{query}*. Try rephrasing.")
         return
+
     lines = [f"⚖️ *Results for '{query}':*\n"]
-    for i, r in enumerate(results[:3], 1):
+    for i, doc in enumerate(docs[:3], 1):
+        title = _re.sub(r'<[^>]+>', ' ', doc.get("title", "Untitled")).strip()
+        court = doc.get("docsource", "Tribunal")
+        tid   = doc.get("tid", "")
+        year  = str(doc.get("publishdate", ""))[:4]
+        url   = f"https://indiankanoon.org/doc/{tid}/"
         lines.append(
-            f"*{i}. {r['title']}*\n"
-            f"   {r['court']} · {str(r.get('date',''))[:4]}\n"
-            f"   [Open Judgment]({r['url']})\n"
+            f"*{i}. {title}*\n"
+            f"   {court} · {year}\n"
+            f"   [Open Judgment]({url})\n"
         )
     lines.append("_Reply /brief <case name> for AI brief_")
     await send(chat_id, "\n".join(lines))
@@ -117,7 +134,7 @@ async def run_digest_broadcast(mode: str):
     try:
         async with httpx.AsyncClient(timeout=15) as c:
             resp = await c.get(
-                f"{BASE_URL}/case-law",
+                "http://localhost:8000/case-law",
                 params={"q": "income tax", "page_size": page_size, "sort": "date"},
                 headers={"Authorization": f"Bearer {os.getenv('INTERNAL_API_KEY')}"},
             )
