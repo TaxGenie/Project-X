@@ -199,6 +199,8 @@ Accordingly, in real-life situations, the actual tax treatment may differ when t
     raw = response.choices[0].message.content
     sections = _parse_key_summary(raw)
     sections["raw"] = raw
+    sections["sec1961"] = text_1961  # verbatim PDF text from get_both_sections_smart()
+    sections["sec2025"] = text_2025  # verbatim PDF text from get_both_sections_smart()
     return sections
 
 
