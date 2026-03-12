@@ -5,6 +5,7 @@ from database import get_due_digest_subscriptions, mark_digest_sent
 tg_router = APIRouter(prefix="/webhook", tags=["Telegram"])
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TG_API   = f"https://api.telegram.org/bot{TG_TOKEN}"
+BASE_URL = os.getenv("BASE_URL", "https://taxcookies.in")
 
 @tg_router.post("/telegram")
 async def telegram_webhook(request: Request):
@@ -53,7 +54,7 @@ async def handle_search(chat_id: int, query: str):
     await send(chat_id, f"🔍 Searching: *{query}*...")
     async with httpx.AsyncClient(timeout=20) as c:
         resp = await c.get(
-            "http://localhost:8000/case-law",
+            f"{BASE_URL}/case-law",
             params={"q": query, "page_size": 3},
             headers={"Authorization": f"Bearer {os.getenv('INTERNAL_API_KEY')}"}
         )
@@ -116,7 +117,7 @@ async def run_digest_broadcast(mode: str):
     try:
         async with httpx.AsyncClient(timeout=15) as c:
             resp = await c.get(
-                "http://localhost:8000/case-law",
+                f"{BASE_URL}/case-law",
                 params={"q": "income tax", "page_size": page_size, "sort": "date"},
                 headers={"Authorization": f"Bearer {os.getenv('INTERNAL_API_KEY')}"},
             )
