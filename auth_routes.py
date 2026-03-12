@@ -13,7 +13,8 @@ from typing import Optional
 
 from auth import send_otp_email, login_with_otp, logout, get_current_user_from_token
 from database import (
-    get_credit_summary, list_chat_sessions,
+    get_credit_summary, deduct_credits as _db_deduct_credits,
+    list_chat_sessions,
     get_chat_session, delete_chat_session, save_chat_session
 )
 
@@ -85,6 +86,24 @@ def _save_user_profile(user_id: int, full_name: str, profession: str,
           use_case.strip(), user_id))
     conn.commit()
     conn.close()
+
+# ── Credit deduction — called by case_law_routes.py ─────────────────────────
+def deduct_credits(user_id: int, amount: int = 1) -> int:
+    """
+    Verify and deduct `amount` credits for `user_id`.
+    Returns new credits_remaining on success.
+    Raises HTTPException 402 if insufficient, 401 if user not found.
+
+    Wraps database.deduct_credits() which returns (success: bool, remaining: int).
+    """
+    success, remaining = _db_deduct_credits(user_id=user_id, amount=amount)
+    if not success:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Insufficient credits. You have {remaining} credit{'s' if remaining != 1 else ''}, this action needs {amount}."
+        )
+    return remaining
+
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
