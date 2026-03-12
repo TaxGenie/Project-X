@@ -7,6 +7,12 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
+import asyncio
+
+from dotenv import load_dotenv          # ← NEW
+load_dotenv()                           # ← NEW 
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from section_mapping import get_section_mapping
 from llm_engine import generate_key_summary, generate_chat_response
@@ -19,6 +25,10 @@ from database import (
 )
 
 from admin_routes import admin_router
+from case_law_routes import case_law_router
+from telegram_routes import tg_router
+from alert_scheduler import run_digest_broadcast, run_alert_digest
+from alerts_routes import alerts_router
 
 try:
     from llm_engine import reload_hints
@@ -51,6 +61,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(case_law_router)
+app.include_router(tg_router)
+app.include_router(alerts_router)
 
 _last_context: dict = {}   # keyed by user_id → their last compare context
 LAST_GENERATED_FILE = None
@@ -72,6 +85,27 @@ class ChatRequest(BaseModel):
     current_section_2025: Optional[str]  = ""
     current_section_1961: Optional[str]  = ""
     session_id:           Optional[str]  = None   # persists chat across reloads
+
+
+# ── Scheduler — digest broadcasts ────────────────────────────────────────────
+scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
+
+@app.on_event("startup")
+async def start_scheduler():
+    # Section alerts (keyword-based, per-user) — from alert_scheduler.py
+    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("instant")), "interval", hours=1)
+    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("daily")),   "cron", hour=7,  minute=0)
+    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("weekly")),  "cron", day_of_week="mon", hour=7, minute=30)
+    # All-judgments digest broadcast (email) — from alert_scheduler.py
+    scheduler.add_job(lambda: asyncio.create_task(run_digest_broadcast("daily")),  "cron", hour=8, minute=0)
+    scheduler.add_job(lambda: asyncio.create_task(run_digest_broadcast("weekly")), "cron", day_of_week="mon", hour=8, minute=0)
+    scheduler.start()
+    print("[TEJAS] Scheduler started — alerts + digest broadcasts active (IST)")
+
+@app.on_event("shutdown")
+async def stop_scheduler():
+    scheduler.shutdown(wait=False)
+    print("[TEJAS] Scheduler stopped.")
 
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
@@ -147,6 +181,8 @@ def compare_sections(
         "sec2"               : sections.get("sec2", ""),
         "sec3"               : sections.get("sec3", ""),
         "sec4"               : sections.get("sec4", ""),
+        "sec1961"            : sections.get("sec1961", ""),  # verbatim 1961 Act PDF text
+        "sec2025"            : sections.get("sec2025", ""),  # verbatim 2025 Act PDF text
         "section_number_2025": section_map.get("section_number_2025", ""),
         "session_id"         : new_session_id,   # frontend uses this for subsequent chat
         "credits"            : credits,
@@ -208,8 +244,9 @@ def chat_followup(
         "credits_remaining" : remaining,
     }
 
+
 # ══════════════════════════════════════════════════════════════════════════════
-# /download-word  — Word export download  (no credit cost)
+# /download-word  — Word export download  (costs COST_WORD_EXPORT credits)
 # ══════════════════════════════════════════════════════════════════════════════
 @app.get("/download-word")
 def download_word(token: str = Query(default="")):
@@ -220,15 +257,25 @@ def download_word(token: str = Query(default="")):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated. Please sign in.")
 
-    # Directly return file without deducting credits
+    ok, remaining = deduct_credits(user["user_id"], COST_WORD_EXPORT)
+    if not ok:
+        raise HTTPException(
+            status_code=402,
+            detail=(
+                f"Not enough credits. You have {remaining} credit(s) left today. "
+                f"Credits reset at midnight IST."
+            )
+        )
+
     if LAST_GENERATED_FILE and os.path.exists(LAST_GENERATED_FILE):
         return FileResponse(
             LAST_GENERATED_FILE,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             filename="Tax Cookies_Analysis.docx",
+            headers={"X-Credits-Remaining": str(remaining)},
         )
-
     raise HTTPException(status_code=404, detail="No file generated yet.")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FEEDBACK  (no credit cost)
