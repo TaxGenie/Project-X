@@ -309,11 +309,17 @@ async def admin_data(request: Request):
             power_users = [dict(r) for r in cur.fetchall()]
 
     except Exception as e:
-        conn.rollback()
-        conn.close()
+        import traceback
+        print(f"[Admin] admin_data ERROR: {e}")
+        print(traceback.format_exc())
+        try: conn.rollback()
+        except: pass
+        try: conn.close()
+        except: pass
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
-        conn.close()
+        try: conn.close()
+        except: pass
 
     fb_log         = _fb_load()
     fb_summary     = _fb_summary(fb_log)
