@@ -14,10 +14,10 @@ from psycopg2.extras import RealDictCursor
 DAILY_CREDIT_LIMIT   = 20   # free credits per user per day
 COST_KEY_SUMMARY     = 3    # generate_key_summary
 COST_CHAT_MESSAGE    = 1    # each chat follow-up
-COST_WORD_EXPORT     = 0    # Word document download
+COST_WORD_EXPORT     = 1    # Word document download
 
 OTP_EXPIRY_MINUTES   = 10
-SESSION_EXPIRY_DAYS  = 300
+SESSION_EXPIRY_DAYS  = 30
 
 
 def _conn():
@@ -28,11 +28,21 @@ def init_db():
     """Create all tables if they don't exist. Safe to call multiple times."""
     sql = """
         CREATE TABLE IF NOT EXISTS users (
-            id          SERIAL PRIMARY KEY,
-            email       TEXT    NOT NULL UNIQUE,
-            created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
-            is_active   INTEGER NOT NULL DEFAULT 1
+            id           SERIAL PRIMARY KEY,
+            email        TEXT    NOT NULL UNIQUE,
+            created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+            is_active    INTEGER NOT NULL DEFAULT 1,
+            full_name    TEXT    DEFAULT '',
+            profession   TEXT    DEFAULT '',
+            organisation TEXT    DEFAULT '',
+            use_case     TEXT    DEFAULT ''
         );
+
+        -- Safe migration: add columns if upgrading from older DB
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name    TEXT DEFAULT '';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS profession   TEXT DEFAULT '';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS organisation TEXT DEFAULT '';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS use_case     TEXT DEFAULT '';
 
         CREATE TABLE IF NOT EXISTS otp_sessions (
             id          SERIAL PRIMARY KEY,
