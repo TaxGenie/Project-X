@@ -105,13 +105,21 @@ def ensure_tables():
                     granted_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            # Each ALTER TABLE gets its own savepoint so a failure cannot abort
+            # the outer transaction and poison subsequent queries.
             for col, typedef in [
                 ("full_name",    "TEXT DEFAULT ''"),
                 ("profession",   "TEXT DEFAULT ''"),
                 ("organisation", "TEXT DEFAULT ''"),
                 ("use_case",     "TEXT DEFAULT ''"),
             ]:
-                cur.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {typedef}")
+                try:
+                    cur.execute("SAVEPOINT ensure_%s" % col)
+                    cur.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {typedef}")
+                    cur.execute("RELEASE SAVEPOINT ensure_%s" % col)
+                except Exception as col_err:
+                    cur.execute("ROLLBACK TO SAVEPOINT ensure_%s" % col)
+                    print(f"[Admin] ensure_tables migration skipped ({col}): {col_err}")
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -218,6 +226,7 @@ async def admin_data(request: Request):
             """)
             daily_activity = [dict(r) for r in cur.fetchall()]
 
+            cur.execute("SAVEPOINT sp_recent_chats")
             try:
                 cur.execute("""
                     SELECT u.email, ch.title, ch.session_id,
@@ -228,7 +237,9 @@ async def admin_data(request: Request):
                     ORDER BY ch.updated_at DESC LIMIT 50
                 """)
                 recent_chats = [dict(r) for r in cur.fetchall()]
+                cur.execute("RELEASE SAVEPOINT sp_recent_chats")
             except Exception:
+                cur.execute("ROLLBACK TO SAVEPOINT sp_recent_chats")
                 cur.execute("""
                     SELECT u.email, ch.title, ch.session_id,
                            ch.created_at, ch.updated_at, 0 AS message_count
@@ -246,6 +257,7 @@ async def admin_data(request: Request):
             """)
             top_topics = [dict(r) for r in cur.fetchall()]
 
+            cur.execute("SAVEPOINT sp_grants")
             try:
                 cur.execute("""
                     SELECT cg.id, u.email, cg.credits, cg.reason, cg.granted_at
@@ -253,11 +265,14 @@ async def admin_data(request: Request):
                     ORDER BY cg.granted_at DESC LIMIT 50
                 """)
                 grants = [dict(r) for r in cur.fetchall()]
+                cur.execute("RELEASE SAVEPOINT sp_grants")
             except Exception:
+                cur.execute("ROLLBACK TO SAVEPOINT sp_grants")
                 grants = []
 
             revenue_total = 0
             purchases = []
+            cur.execute("SAVEPOINT sp_purchases")
             try:
                 cur.execute("""
                     SELECT u.email, cp.pack, cp.amount_paid,
@@ -268,8 +283,9 @@ async def admin_data(request: Request):
                 purchases = [dict(r) for r in cur.fetchall()]
                 cur.execute("SELECT COALESCE(SUM(amount_paid),0) AS t FROM credit_purchases")
                 revenue_total = cur.fetchone()["t"]
+                cur.execute("RELEASE SAVEPOINT sp_purchases")
             except Exception:
-                pass
+                cur.execute("ROLLBACK TO SAVEPOINT sp_purchases")
 
             cur.execute("""
                 SELECT COALESCE(profession,'') AS profession, COUNT(*) AS count
