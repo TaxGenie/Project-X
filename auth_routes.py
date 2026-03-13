@@ -4,7 +4,6 @@ Mount in main.py with:  app.include_router(auth_router)
 """
 import re
 import uuid
-import sqlite3
 import os
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -15,10 +14,9 @@ from auth import send_otp_email, login_with_otp, logout, get_current_user_from_t
 from database import (
     get_credit_summary, deduct_credits as _db_deduct_credits,
     list_chat_sessions,
-    get_chat_session, delete_chat_session, save_chat_session
+    get_chat_session, delete_chat_session, save_chat_session,
+    _conn
 )
-
-DB_PATH = os.getenv("DB_PATH", "tejas_users.db")
 
 # ── Profession options ────────────────────────────────────────────────────────
 PROFESSION_OPTIONS = [
@@ -54,18 +52,17 @@ USE_CASE_OPTIONS = [
 def _ensure_profile_columns():
     """Add profile columns to users table if they don't exist yet (safe migration)."""
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        for col, typedef in [
-            ("full_name",    "TEXT DEFAULT ''"),
-            ("profession",   "TEXT DEFAULT ''"),
-            ("organisation", "TEXT DEFAULT ''"),
-            ("use_case",     "TEXT DEFAULT ''"),
-        ]:
-            try:
-                cur.execute(f"ALTER TABLE users ADD COLUMN {col} {typedef}")
-            except sqlite3.OperationalError:
-                pass  # column already exists
+        conn = _conn()
+        with conn.cursor() as cur:
+            for col, typedef in [
+                ("full_name",    "TEXT DEFAULT ''"),
+                ("profession",   "TEXT DEFAULT ''"),
+                ("organisation", "TEXT DEFAULT ''"),
+                ("use_case",     "TEXT DEFAULT ''"),
+            ]:
+                cur.execute(f"""
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {typedef}
+                """)
         conn.commit()
         conn.close()
     except Exception as e:
@@ -76,16 +73,18 @@ def _save_user_profile(user_id: int, full_name: str, profession: str,
                        organisation: str, use_case: str):
     """Persist profile fields for a user."""
     _ensure_profile_columns()
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE users
-        SET full_name=?, profession=?, organisation=?, use_case=?
-        WHERE id=?
-    """, (full_name.strip(), profession.strip(), organisation.strip(),
-          use_case.strip(), user_id))
-    conn.commit()
-    conn.close()
+    conn = _conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users
+                SET full_name=%s, profession=%s, organisation=%s, use_case=%s
+                WHERE id=%s
+            """, (full_name.strip(), profession.strip(), organisation.strip(),
+                  use_case.strip(), user_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 # ── Credit deduction — called by case_law_routes.py ─────────────────────────
 def deduct_credits(user_id: int, amount: int = 1) -> int:
@@ -232,15 +231,16 @@ async def logout_endpoint(user: dict = Depends(get_current_user)):
 async def me(user: dict = Depends(get_current_user)):
     """Return current user profile + credit summary."""
     _ensure_profile_columns()
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cur  = conn.cursor()
-    cur.execute("""
-        SELECT full_name, profession, organisation, use_case
-        FROM users WHERE id = ?
-    """, (user["user_id"],))
-    row = cur.fetchone()
-    conn.close()
+    conn = _conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT full_name, profession, organisation, use_case
+                FROM users WHERE id = %s
+            """, (user["user_id"],))
+            row = cur.fetchone()
+    finally:
+        conn.close()
     credits = get_credit_summary(user["user_id"])
     profile = dict(row) if row else {}
     return {
