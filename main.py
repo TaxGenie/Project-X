@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
-import asyncio
 
 from dotenv import load_dotenv          # ← NEW
 load_dotenv()                           # ← NEW 
@@ -92,13 +91,17 @@ scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
 
 @app.on_event("startup")
 async def start_scheduler():
+    # AsyncIOScheduler natively handles coroutine functions — pass them directly
+    # with args=[]. Do NOT use asyncio.create_task() — it fails when APScheduler
+    # fires the job because there is no running loop in that thread context.
+
     # Section alerts (keyword-based, per-user) — from alert_scheduler.py
-    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("instant")), "interval", hours=1)
-    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("daily")),   "cron", hour=7,  minute=0)
-    scheduler.add_job(lambda: asyncio.create_task(run_alert_digest("weekly")),  "cron", day_of_week="mon", hour=7, minute=30)
-    # All-judgments digest broadcast (email) — from alert_scheduler.py
-    scheduler.add_job(lambda: asyncio.create_task(run_digest_broadcast("daily")),  "cron", hour=8, minute=0)
-    scheduler.add_job(lambda: asyncio.create_task(run_digest_broadcast("weekly")), "cron", day_of_week="mon", hour=8, minute=0)
+    scheduler.add_job(run_alert_digest, "interval", hours=1,                                    args=["instant"])
+    scheduler.add_job(run_alert_digest, "cron",     hour=7,  minute=0,                          args=["daily"])
+    scheduler.add_job(run_alert_digest, "cron",     day_of_week="mon", hour=7,  minute=30,      args=["weekly"])
+    # All-judgments digest broadcast (TaxSutra-style email) — from alert_scheduler.py
+    scheduler.add_job(run_digest_broadcast, "cron", hour=8,  minute=0,                          args=["daily"])
+    scheduler.add_job(run_digest_broadcast, "cron", day_of_week="mon", hour=8,  minute=0,       args=["weekly"])
     scheduler.start()
     print("[TEJAS] Scheduler started — alerts + digest broadcasts active (IST)")
 
