@@ -134,13 +134,16 @@ def init_db():
                     print("[TEJAS DB] Migration skipped (%s): %s" % (col, e))
 
         conn.commit()
-        print("[TEJAS DB] PostgreSQL tables initialised ✅")
+        print("[TEJAS DB] PostgreSQL tables initialised OK")
     except Exception as e:
-        conn.rollback()
-        print("[TEJAS DB] init_db ERROR — rolled back: %s" % e)
-        raise
+        try: conn.rollback()
+        except: pass
+        # Non-fatal: log but do NOT re-raise. Raising here crashes the module
+        # import, prevents FastAPI binding to the port, and hangs Render deploy.
+        print("[TEJAS DB] init_db ERROR (non-fatal): %s" % e)
     finally:
-        conn.close()
+        try: conn.close()
+        except: pass
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -726,4 +729,9 @@ def mark_digest_sent(subscription_id: int, sent_tids: list):
 
 
 # ── Auto-init on import ───────────────────────────────────────────────────────
-init_db()
+# Wrapped so any unexpected startup error is logged but never prevents the
+# process from binding to the port (which would cause Render to hang deploying).
+try:
+    init_db()
+except Exception as _init_err:
+    print("[TEJAS DB] Startup init_db failed: %s" % _init_err)
