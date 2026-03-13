@@ -26,8 +26,12 @@ def _conn():
 
 def init_db():
     """Create all tables if they don't exist. Safe to call multiple times."""
-    sql = """
-        CREATE TABLE IF NOT EXISTS users (
+
+    # Each statement runs individually so a failure in one cannot abort the
+    # entire transaction and leave the connection in a broken state for later
+    # queries (the root cause of InFailedSqlTransaction on the profession query).
+    CREATE_STATEMENTS = [
+        """CREATE TABLE IF NOT EXISTS users (
             id           SERIAL PRIMARY KEY,
             email        TEXT    NOT NULL UNIQUE,
             created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -36,41 +40,31 @@ def init_db():
             profession   TEXT    DEFAULT '',
             organisation TEXT    DEFAULT '',
             use_case     TEXT    DEFAULT ''
-        );
-
-        -- Safe migration: add columns if upgrading from older DB
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name    TEXT DEFAULT '';
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS profession   TEXT DEFAULT '';
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS organisation TEXT DEFAULT '';
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS use_case     TEXT DEFAULT '';
-
-        CREATE TABLE IF NOT EXISTS otp_sessions (
+        )""",
+        """CREATE TABLE IF NOT EXISTS otp_sessions (
             id          SERIAL PRIMARY KEY,
             email       TEXT    NOT NULL,
             otp         TEXT    NOT NULL,
             created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
             expires_at  TIMESTAMP NOT NULL,
             is_used     INTEGER NOT NULL DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS user_sessions (
+        )""",
+        """CREATE TABLE IF NOT EXISTS user_sessions (
             id          SERIAL PRIMARY KEY,
             user_id     INTEGER NOT NULL REFERENCES users(id),
             token       TEXT    NOT NULL UNIQUE,
             created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
             expires_at  TIMESTAMP NOT NULL,
             last_seen   TIMESTAMP NOT NULL DEFAULT NOW()
-        );
-
-        CREATE TABLE IF NOT EXISTS daily_credits (
+        )""",
+        """CREATE TABLE IF NOT EXISTS daily_credits (
             id            SERIAL PRIMARY KEY,
             user_id       INTEGER NOT NULL REFERENCES users(id),
             date_ist      TEXT    NOT NULL,
             credits_used  INTEGER NOT NULL DEFAULT 0,
             UNIQUE(user_id, date_ist)
-        );
-
-        CREATE TABLE IF NOT EXISTS chat_history (
+        )""",
+        """CREATE TABLE IF NOT EXISTS chat_history (
             id            SERIAL PRIMARY KEY,
             user_id       INTEGER NOT NULL REFERENCES users(id),
             session_id    TEXT    NOT NULL UNIQUE,
@@ -81,9 +75,8 @@ def init_db():
             messages      TEXT    NOT NULL DEFAULT '[]',
             created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
             updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
-        );
-
-        CREATE TABLE IF NOT EXISTS user_alerts (
+        )""",
+        """CREATE TABLE IF NOT EXISTS user_alerts (
             id            SERIAL PRIMARY KEY,
             user_id       INTEGER NOT NULL REFERENCES users(id),
             section_query TEXT    NOT NULL,
@@ -93,9 +86,8 @@ def init_db():
             created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
             last_sent_at  TIMESTAMP DEFAULT NULL,
             last_sent_tids TEXT   DEFAULT '[]'
-        );
-
-        CREATE TABLE IF NOT EXISTS digest_subscriptions (
+        )""",
+        """CREATE TABLE IF NOT EXISTS digest_subscriptions (
             id            SERIAL PRIMARY KEY,
             user_id       INTEGER NOT NULL REFERENCES users(id) UNIQUE,
             courts        TEXT    NOT NULL DEFAULT '["all"]',
@@ -104,22 +96,49 @@ def init_db():
             created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
             last_sent_at  TIMESTAMP DEFAULT NULL,
             last_sent_tids TEXT   DEFAULT '[]'
-        );
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_chat_user     ON chat_history(user_id, updated_at)",
+        "CREATE INDEX IF NOT EXISTS idx_otp_email     ON otp_sessions(email, is_used)",
+        "CREATE INDEX IF NOT EXISTS idx_session_token ON user_sessions(token)",
+        "CREATE INDEX IF NOT EXISTS idx_credits_user  ON daily_credits(user_id, date_ist)",
+        "CREATE INDEX IF NOT EXISTS idx_digest_freq   ON digest_subscriptions(frequency, is_active)",
+        "CREATE INDEX IF NOT EXISTS idx_alerts_user   ON user_alerts(user_id, is_active)",
+        "CREATE INDEX IF NOT EXISTS idx_alerts_freq   ON user_alerts(frequency, is_active)",
+    ]
 
-        CREATE INDEX IF NOT EXISTS idx_chat_user     ON chat_history(user_id, updated_at);
-        CREATE INDEX IF NOT EXISTS idx_otp_email     ON otp_sessions(email, is_used);
-        CREATE INDEX IF NOT EXISTS idx_session_token ON user_sessions(token);
-        CREATE INDEX IF NOT EXISTS idx_credits_user  ON daily_credits(user_id, date_ist);
-        CREATE INDEX IF NOT EXISTS idx_digest_freq   ON digest_subscriptions(frequency, is_active);
-        CREATE INDEX IF NOT EXISTS idx_alerts_user   ON user_alerts(user_id, is_active);
-        CREATE INDEX IF NOT EXISTS idx_alerts_freq   ON user_alerts(frequency, is_active);
-    """
+    # ALTER TABLE migrations — each wrapped in its own SAVEPOINT so a failure
+    # (e.g. duplicate column on older Postgres) rolls back only that one
+    # statement and never poisons the outer transaction.
+    MIGRATION_COLUMNS = [
+        ("full_name",    "TEXT DEFAULT ''"),
+        ("profession",   "TEXT DEFAULT ''"),
+        ("organisation", "TEXT DEFAULT ''"),
+        ("use_case",     "TEXT DEFAULT ''"),
+    ]
+
     conn = _conn()
     try:
         with conn.cursor() as cur:
-            cur.execute(sql)
+            for stmt in CREATE_STATEMENTS:
+                cur.execute(stmt)
+
+            for col, col_def in MIGRATION_COLUMNS:
+                try:
+                    cur.execute("SAVEPOINT migration_%s" % col)
+                    cur.execute(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS %s %s" % (col, col_def)
+                    )
+                    cur.execute("RELEASE SAVEPOINT migration_%s" % col)
+                except Exception as e:
+                    cur.execute("ROLLBACK TO SAVEPOINT migration_%s" % col)
+                    print("[TEJAS DB] Migration skipped (%s): %s" % (col, e))
+
         conn.commit()
         print("[TEJAS DB] PostgreSQL tables initialised ✅")
+    except Exception as e:
+        conn.rollback()
+        print("[TEJAS DB] init_db ERROR — rolled back: %s" % e)
+        raise
     finally:
         conn.close()
 
