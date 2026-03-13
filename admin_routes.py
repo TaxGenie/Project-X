@@ -91,26 +91,33 @@ def require_admin(request: Request):
     if pw != ADMIN_PASS:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-def ensure_tables(conn):
-    """Create credit_grants table and profile columns if not exist."""
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS credit_grants (
-                id         SERIAL PRIMARY KEY,
-                user_id    INTEGER NOT NULL,
-                credits    INTEGER NOT NULL,
-                reason     TEXT    DEFAULT '',
-                granted_at TIMESTAMP DEFAULT NOW()
-            )
-        """)
-        for col, typedef in [
-            ("full_name",    "TEXT DEFAULT ''"),
-            ("profession",   "TEXT DEFAULT ''"),
-            ("organisation", "TEXT DEFAULT ''"),
-            ("use_case",     "TEXT DEFAULT ''"),
-        ]:
-            cur.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {typedef}")
-    conn.commit()
+def ensure_tables():
+    """Create credit_grants table and profile columns if not exist. Uses own connection."""
+    conn = _conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS credit_grants (
+                    id         SERIAL PRIMARY KEY,
+                    user_id    INTEGER NOT NULL,
+                    credits    INTEGER NOT NULL,
+                    reason     TEXT    DEFAULT '',
+                    granted_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            for col, typedef in [
+                ("full_name",    "TEXT DEFAULT ''"),
+                ("profession",   "TEXT DEFAULT ''"),
+                ("organisation", "TEXT DEFAULT ''"),
+                ("use_case",     "TEXT DEFAULT ''"),
+            ]:
+                cur.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {typedef}")
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[Admin] ensure_tables warning: {e}")
+    finally:
+        conn.close()
 
 
 # ── Serve admin HTML ─────────────────────────────────────────────────────────
@@ -131,13 +138,20 @@ async def admin_page():
 async def admin_data(request: Request):
     require_admin(request)
 
+    # Use fresh connection and rollback on any error to avoid aborted transaction cascade
     conn = _conn()
     try:
-        ensure_tables(conn)
-        today     = datetime.date.today().isoformat()
-        yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
-        week_ago  = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+        ensure_tables()
+    except Exception as e:
+        print(f"[Admin] ensure_tables error: {e}")
+        try: conn.rollback()
+        except: pass
 
+    today     = datetime.date.today().isoformat()
+    yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    week_ago  = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+
+    try:
         with conn.cursor() as cur:
 
             cur.execute("SELECT COUNT(*) AS c FROM users")
@@ -294,6 +308,10 @@ async def admin_data(request: Request):
             """)
             power_users = [dict(r) for r in cur.fetchall()]
 
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         conn.close()
 
@@ -419,7 +437,7 @@ async def grant_credits(req: GrantCreditsRequest, request: Request):
         raise HTTPException(status_code=400, detail="Credits must be positive.")
     conn = _conn()
     try:
-        ensure_tables(conn)
+        ensure_tables()
         today = datetime.date.today().isoformat()
         with conn.cursor() as cur:
             cur.execute("SELECT id, email FROM users WHERE id = %s", (req.user_id,))
@@ -450,7 +468,7 @@ async def grant_history(request: Request):
     require_admin(request)
     conn = _conn()
     try:
-        ensure_tables(conn)
+        ensure_tables()
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT cg.id, u.email, cg.credits, cg.reason, cg.granted_at
@@ -522,7 +540,7 @@ async def bulk_grant(req: BulkGrantRequest, request: Request):
         raise HTTPException(status_code=400, detail="Credits must be positive.")
     conn = _conn()
     try:
-        ensure_tables(conn)
+        ensure_tables()
         today = datetime.date.today().isoformat()
         success, failed = [], []
         with conn.cursor() as cur:
